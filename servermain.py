@@ -1,4 +1,3 @@
-
 from server import Server
 from sys import argv
 

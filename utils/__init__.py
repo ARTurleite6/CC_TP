@@ -1,1 +1,1 @@
-import dns
+from .dns import DNSMessage

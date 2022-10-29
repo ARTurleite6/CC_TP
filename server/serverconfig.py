@@ -1,4 +1,4 @@
-from database import DatabaseConfig
+from .database import DatabaseConfig
 
 class ServerConfig:
     def __init__(self, config_file):

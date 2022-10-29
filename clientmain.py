@@ -1,10 +1,10 @@
 import socket
 from sys import argv
-from .. import dns
+from utils import DNSMessage
 
 def main():
-    if(len(argv) < 5):
-        return 
+    # if(len(argv) < 5):
+    #     return 
 
     message =  DNSMessage(1, ("example.com.", "MX")) 
     print(message.to_message_str())

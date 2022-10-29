@@ -1,5 +1,5 @@
 import socket
-from serverconfig import ServerConfig
+from .serverconfig import ServerConfig
 from time import sleep
 from threading import Thread
 
