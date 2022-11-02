@@ -6,8 +6,8 @@ def main():
     # if(len(argv) < 5):
     #     return 
 
-    message =  DNSMessage(1, ("example.com.", "MX")) 
-    print(message.to_message_str())
+    message =  DNSMessage(1, ("example.com.", "MX"), "Q+R") 
+    print(message.to_message_str(True))
     # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     #
     # msg = "Adoro redes"
