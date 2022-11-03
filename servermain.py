@@ -1,5 +1,5 @@
-from server import Server
 from sys import argv
+from server_module import Server
 
 def main():
     if len(argv) < 4:

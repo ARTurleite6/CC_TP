@@ -1,4 +1,4 @@
-from .database import DatabaseConfig
+from server_module.database import DatabaseConfig
 
 class ServerConfig:
     def __init__(self, config_file):
@@ -29,7 +29,7 @@ class ServerConfig:
             file_content = f.read()
             for line in filter(lambda line: line[0] != '#', file_content.splitlines()):
                 camps = line.split(" ")
-                dom: str = camps[0]
+                dom: str = camps[0] + "."
                 type: str = camps[1]
                 value: str = camps[2]
     

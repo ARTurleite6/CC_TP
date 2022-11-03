@@ -1,16 +1,18 @@
 class DatabaseConfig:
     def __init__(self, database_file):
-        self.default = {} 
-        self.name = {}
-        self.administrator = {}
-        self.serial_number = {}
-        self.refresh = {}
-        self.retry = {}
-        self.expire = {}
-        self.ns = {}
-        self.ips = {}
-        self.emails = {}
-        self.cname = {}
+        self.default: dict[str, str] = {} 
+        self.name: dict[str, tuple[str, int]] = {}
+        self.administrator: dict[str, tuple[str, int]] = {}
+        self.serial_number: dict[str, tuple[int, int]] = {}
+        self.refresh: dict[str, tuple[int, int]] = {}
+        self.retry: dict[str, tuple[int, int]] = {}
+        self.expire: dict[str, tuple[int, int]] = {}
+        self.ns: dict[str, list[tuple[str, int, int]]] = {}
+        self.ips: dict[str, tuple[str, int, int]] = {}
+        self.emails: dict[str, list[tuple[str, int, int]]] = {}
+        self.cname: dict[str, tuple[str, int]] = {}
+
+        self.lines: dict[str, list[str]] = {}
 
         self.__read_config_file__(database_file)
 
@@ -29,8 +31,20 @@ class DatabaseConfig:
         )
         """
 
-    def get_refresh_time(self, domain) -> int:
-        return self.refresh[domain]
+    def get_lines_type_domain(self, type, wanted_domain):
+        values = []
+        lines_type = self.lines[type]
+        for line in lines_type:
+            domain = line.split(' ')[0]
+            if domain == wanted_domain:
+                values.append(line)
+        return values
+
+    def get_emails(self, domain) -> list[tuple[str, int, int]]:
+        return self.emails[domain]
+
+    def get_authorities(self, domain) -> list[tuple[str, int, int]]:
+        return self.ns[domain]
 
     def __read_config_file__(self, database_file):
         with open(database_file) as file:
@@ -55,6 +69,10 @@ class DatabaseConfig:
                 if tam > 5:
                     priority = int(camps[5])
 
+                if type not in self.lines:
+                    self.lines[type] = []
+                self.lines[type].append(line)
+
                 if type == "DEFAULT":
                     if param not in self.default:
                         self.default[param] = value
@@ -74,15 +92,17 @@ class DatabaseConfig:
                     self.expire[param] = (int(value), ttl)
                 elif type == "NS":
                     if param not in self.ns:
-                        self.ns[param] = {}
-                    self.ns[param][value] = (ttl, priority)
+                        self.ns[param] = []
+                    self.ns[param].append((value, ttl, priority))
                 elif type == "A":
                     self.ips[param] = (value, ttl, priority)
                 elif type == "CNAME":
                     if value not in self.cname and param not in self.cname:
                         self.cname[param] = (value, ttl)
                 elif type == "MX":
-                    self.emails[param] = (value, ttl, priority)
+                    if param not in self.emails:
+                        self.emails[param] = []
+                    self.emails[param].append((value, ttl, priority))
                 elif type == "PTR":
                     pass 
 
