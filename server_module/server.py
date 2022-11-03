@@ -59,6 +59,7 @@ class UDPQueryAnswer(Thread):
                 ips.append(ip)
         print(response)
         print(authorities)
+        print(ips)
 
 
 class UDPClientListener(Thread):

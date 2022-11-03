@@ -40,24 +40,41 @@ class DatabaseConfig:
                 values.append(line)
         return values
 
-    def get_emails(self, domain) -> list[tuple[str, int, int]]:
+    def get_emails(self, domain: str) -> list[tuple[str, int, int]]:
         return self.emails[domain]
 
-    def get_authorities(self, domain) -> list[tuple[str, int, int]]:
+    def get_authorities(self, domain: str) -> list[tuple[str, int, int]]:
         return self.ns[domain]
+
+    def __concat_default_value__(self, words: list[str], concat_value: str) -> list[str]:
+        if concat_value == "":
+            return words
+
+        if words[0][-1] != '.':
+            words[0] += '.' + concat_value
+
+        if not words[2].isdigit() and not self.__is_an_ip__(words[2]) and words[2][-1] != '.':
+            words[2] += '.' + concat_value
+            
+        return words
+            
+
+    def __is_an_ip__(self, value: str) -> bool:
+        camps = value.split('.')
+        return len(camps) == 4 and all(camp.isdigit() for camp in camps)
+        
 
     def __read_config_file__(self, database_file):
         with open(database_file) as file:
 
+            concatable_value = ""
             for line in filter(lambda x: x[0] != '#', file.read().splitlines()):
-                concatable_value = ""
                 for (variable, value) in self.default.items():
+                    print("variable=", variable)
                     line = line.replace(variable, value)
 
                 camps = line.split(' ')
-                param = camps[0]
                 type = camps[1]
-                value = camps[2]
                 ttl = 0
                 priority = 255
 
@@ -69,9 +86,15 @@ class DatabaseConfig:
                 if tam > 5:
                     priority = int(camps[5])
 
+                if type != "DEFAULT":
+                    camps = self.__concat_default_value__(camps, concatable_value)
+
                 if type not in self.lines:
                     self.lines[type] = []
-                self.lines[type].append(line)
+                self.lines[type].append(" ".join(camps))
+
+                param = camps[0]
+                value = camps[2]
 
                 if type == "DEFAULT":
                     if param not in self.default:
@@ -105,6 +128,7 @@ class DatabaseConfig:
                     self.emails[param].append((value, ttl, priority))
                 elif type == "PTR":
                     pass 
+        print("lines =", self.lines)
 
 
 
