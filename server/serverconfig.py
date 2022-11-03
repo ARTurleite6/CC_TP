@@ -2,16 +2,26 @@ from .database import DatabaseConfig
 
 class ServerConfig:
     def __init__(self, config_file):
-        self.databases = {}
-        self.sp_servers = {}
-        self.ss_servers = {}
-        self.default_servers = {}
+        self.databases_files: dict[str, str] = {}
+        self.database_configs: dict[str, DatabaseConfig] = {}
+        self.sp_servers: dict[str, str] = {}
+        self.ss_servers: dict[str, list[str]] = {}
+        self.default_servers: dict[str, list[str]] = {}
         self.log_file = ""
-        self.root_servers = []
+        self.root_servers: list[str] = []
         self.config_from_file(config_file)
 
+    def get_database_config(self, domain) -> DatabaseConfig:
+        return self.database_configs[domain]
+
+    def add_database_config(self, domain: str, config: DatabaseConfig):
+        self.database_configs[domain] = config
+
+    def get_sp_servers(self):
+        return self.sp_servers.items()
+
     def __str__(self):
-        return f"ServerConfig( databases= {self.databases}, sp_servers = {self.sp_servers}, ss_servers= {self.ss_servers}, default_servers= {self.default_servers}, log_file = {self.log_file}, root_servers = {self.root_servers}"
+        return f"ServerConfig( databases_configs= {self.database_configs}, database_files = {self.databases_files}, sp_servers = {self.sp_servers}, ss_servers= {self.ss_servers}, default_servers= {self.default_servers}, log_file = {self.log_file}, root_servers = {self.root_servers}"
 
     def config_from_file(self, file: str):
 
@@ -26,7 +36,8 @@ class ServerConfig:
                 if type == "DB":
                     db_config = DatabaseConfig(value)
                     print(db_config)
-                    self.databases[dom] = db_config
+                    self.database_configs[dom] = db_config
+                    self.databases_files[dom] = value
                 elif type == "SP":
                     self.sp_servers[dom] = value
                 elif type == "SS":
@@ -40,6 +51,8 @@ class ServerConfig:
                 elif type == "LG":
                     self.log_file = value
                 elif type == "DD":
-                    self.default_servers[dom] = value
+                    if dom not in self.default_servers:
+                        self.default_servers[dom] = []
+                    self.default_servers[dom].append(value)
 
 

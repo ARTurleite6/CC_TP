@@ -29,6 +29,9 @@ class DatabaseConfig:
         )
         """
 
+    def get_refresh_time(self, domain) -> int:
+        return self.refresh[domain]
+
     def __read_config_file__(self, database_file):
         with open(database_file) as file:
 
