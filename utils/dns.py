@@ -9,6 +9,8 @@ class DNSMessage:
         self.flags = flags_from_str(flags)
         self.response_code = response_code
 
+    def get_id(self) -> int:
+        return self.id
             
     def __get__str__from__flags(self):
         camps = []
@@ -101,7 +103,27 @@ QUERY-INFO.NAME = {self.query_info[0]}, QUERY-INFO.TYPE = {self.query_info[1]},;
 # Data: List of Response, Authorities and Extra Values
 {self.__get_values__()}"""
         else:
-            return f"""{self.id},{self.__get__str__from__flags()},{self.response_code},{self.number_values},{self.number_authorities},{self.number_extra_values};{self.query_info[0]},{self.query_info[1]};"""
+            message = f"""{self.id},{self.__get__str__from__flags()},{self.response_code},{self.number_values},{self.number_authorities},{self.number_extra_values};{self.query_info[0]},{self.query_info[1]};\n"""
+            for i in range(self.number_values):
+                message += self.values[i]
+                if i == self.number_values - 1:
+                    message += ";\n"
+                else:
+                    message += ",\n"
+
+            for i in range(self.number_authorities):
+                message += self.[i]
+                if i == self.number_values - 1:
+                    message += ";\n"
+                else:
+                    message += ",\n"
+
+            for i in range(self.number_values):
+                message += self.values[i]
+                if i == self.number_values - 1:
+                    message += ";\n"
+                else:
+                    message += ",\n"
 
 def flags_from_str(flags: str) -> list[int]:
     flags_list = [0, 0, 0]

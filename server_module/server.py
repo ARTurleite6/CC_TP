@@ -60,6 +60,10 @@ class UDPQueryAnswer(Thread):
         print(response)
         print(authorities)
         print(ips)
+        answer = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="A+R", values=response, number_extra_values=len(ips), number_authorities=len(authorities), number_values=len(response), response_code=0)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.sendto(answer.to_message_str(True).encode('utf-8'), self.client_addr)
+
 
 
 class UDPClientListener(Thread):
