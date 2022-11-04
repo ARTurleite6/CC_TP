@@ -70,7 +70,6 @@ class DatabaseConfig:
             concatable_value = ""
             for line in filter(lambda x: x[0] != '#', file.read().splitlines()):
                 for (variable, value) in self.default.items():
-                    print("variable=", variable)
                     line = line.replace(variable, value)
 
                 camps = line.split(' ')
@@ -128,7 +127,6 @@ class DatabaseConfig:
                     self.emails[param].append((value, ttl, priority))
                 elif type == "PTR":
                     pass 
-        print("lines =", self.lines)
 
 
 

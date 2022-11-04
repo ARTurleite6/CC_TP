@@ -31,11 +31,11 @@ from utils import from_message_str, DNSMessage
 #             pass
 
 class UDPQueryAnswer(Thread):
-    def __init__(self, server_config: ServerConfig, client_addr, message: str):
+    def __init__(self, server_config: ServerConfig, client_addr, message: bytes):
         super().__init__()
         self.server_config = server_config
         self.client_addr = client_addr
-        self.message = from_message_str(message)
+        self.message = from_message_str(message.decode('utf-8'))
 
     def run(self) -> None:
         print(self.message)
@@ -79,9 +79,7 @@ class UDPClientListener(Thread):
             while True:
                 msg, addr = receiver.recvfrom(1024)
                 print(f"received message from {addr}")
-                msg_decode = msg.decode('utf-8')
-                print(msg_decode)
-                UDPQueryAnswer(self.server_config, addr, msg_decode).start()
+                UDPQueryAnswer(self.server_config, addr, msg).start()
 
     
 class Server:
