@@ -6,8 +6,30 @@ class DNSMessage:
         self.number_extra_values = number_extra_values
         self.number_authorities = number_authorities
         self.number_values = number_values
-        self.flags = flags
+        self.flags = flags_from_str(flags)
         self.response_code = response_code
+
+            
+    def __get__str__from__flags(self):
+        camps = []
+        if self.flags[0] == 1:
+            camps.append('Q')
+
+        if self.flags[1] == 1:
+            camps.append('R')
+
+        if self.flags[2] == 1:
+            camps.append('A')
+
+        return '+'.join(camps)
+
+    def encode(self):
+        #TODO encoding a message
+        pass
+    
+    def decode_message(self):
+        #TODO
+        pass
 
     def get_query_info(self) -> tuple[str, str]:
         return self.query_info
@@ -67,25 +89,30 @@ class DNSMessage:
                 else:
                     values += ",\n"
             
-    
-    def decode_message(self):
-        #TODO
-        pass
  
     def to_message_str(self, debug_mode = False):
 
         if not debug_mode:
             return f"""# Header
-MESSAGE-ID = {self.id}, FLAGS = {self.flags}, RESPONSE-CODE = {self.response_code},
+MESSAGE-ID = {self.id}, FLAGS = {self.__get__str__from__flags()}, RESPONSE-CODE = {self.response_code},
 N-VALUES = {self.number_values}, N-AUTHORITIES = {self.number_authorities}, N-EXTRA-VALUES = {self.number_extra_values},; # Data: Query Info
 # Data: Query Info
 QUERY-INFO.NAME = {self.query_info[0]}, QUERY-INFO.TYPE = {self.query_info[1]},; # Data: List of Response, Authorities and Extra Values 
 # Data: List of Response, Authorities and Extra Values
 {self.__get_values__()}"""
         else:
-            return f"""{self.id},{self.flags},{self.response_code},{self.number_values},{self.number_authorities},{self.number_extra_values};{self.query_info[0]},{self.query_info[1]};"""
+            return f"""{self.id},{self.__get__str__from__flags()},{self.response_code},{self.number_values},{self.number_authorities},{self.number_extra_values};{self.query_info[0]},{self.query_info[1]};"""
+
+def flags_from_str(flags: str) -> list[int]:
+    flags_list = [0, 0, 0]
+    camps = flags.split('+')
+    flags_list[0] = int(any(camp == 'Q' for camp in camps))
+    flags_list[1] = int(any(camp == 'R' for camp in camps))
+    flags_list[2] = int(any(camp == 'A' for camp in camps))
+
+    return flags_list
          
-def from_message_str(message: str):
+def from_message_str(message: str) -> DNSMessage:
     camps = message.split(';')
     header = camps[0]
     query_info = camps[1]
