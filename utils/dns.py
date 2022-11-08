@@ -11,8 +11,6 @@ class DNSMessage:
 
     def __divide_all_values__(self, values: list[str], number_values: int, number_extra_values, number_authorities: int):
 
-        print("len =", len(values))
-        print("value=",number_values, "extra_values=", number_extra_values, "authorities=", number_authorities)
         ans_values = []
         auth_values = []
         extra_values = []
