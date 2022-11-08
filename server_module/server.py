@@ -41,28 +41,29 @@ class UDPQueryAnswer(Thread):
         print(self.message)
         print(f"Received from {self.client_addr}")
         query_info = self.message.get_query_info()
-        db_config = self.server_config.get_database_config(query_info[0])
-        response = db_config.get_lines_type_domain(query_info[1], query_info[0])
-        authorities = db_config.get_lines_type_domain('NS', query_info[0])
-        ips = []
-
-        for res in response:
-            value = res.split(' ')[2]
-            ips_wanted = db_config.get_lines_type_domain('A', value)
-            for ip in ips_wanted:
-                ips.append(ip)
-
-        for auth in authorities:
-            value = auth.split(' ')[2]
-            ips_wanted = db_config.get_lines_type_domain('A', value)
-            for ip in ips_wanted:
-                ips.append(ip)
-        print(response)
-        print(authorities)
-        print(ips)
-        answer = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="A+R", values=response + authorities + ips, number_extra_values=len(ips), number_authorities=len(authorities), number_values=len(response), response_code=0)
+        cache = self.server_config.get_database_config()
+        answer = cache.get_database_values(query_value=query_info[0], query_type=query_info[1])
+        # response = db_config.get_lines_type_domain(query_info[1], query_info[0])
+        # authorities = db_config.get_lines_type_domain('NS', query_info[0])
+        # ips = []
+        #
+        # for res in response:
+        #     value = res.split(' ')[2]
+        #     ips_wanted = db_config.get_lines_type_domain('A', value)
+        #     for ip in ips_wanted:
+        #         ips.append(ip)
+        #
+        # for auth in authorities:
+        #     value = auth.split(' ')[2]
+        #     ips_wanted = db_config.get_lines_type_domain('A', value)
+        #     for ip in ips_wanted:
+        #         ips.append(ip)
+        # print(response)
+        # print(authorities)
+        # print(ips)
+        message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="A+R", values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.sendto(answer.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
+            s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
 
 
 
@@ -94,6 +95,7 @@ class Server:
         self.timeout = timeout
 
     def run(self):
+        print(self.server_config.database_config)
         UDPClientListener(self.port, self.server_config).start()
 
     def __str__(self):
