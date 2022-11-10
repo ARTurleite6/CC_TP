@@ -15,11 +15,17 @@ class ServerConfig:
     def get_database_config(self) -> DatabaseConfig:
         return self.database_config
 
+    def get_database_files(self) -> dict[str, str]:
+        return self.databases_files
+
     # def add_database_config(self, domain: str, config: DatabaseConfig):
     #     self.database_configs[domain] = config
 
-    def get_sp_servers(self):
-        return self.sp_servers.items()
+    def get_ss_servers(self) -> dict[str, list[str]]:
+        return self.ss_servers
+
+    def get_sp_servers(self) -> dict[str, str]:
+        return self.sp_servers
 
     def __str__(self):
         return f"ServerConfig( databases_configs= {self.database_config}, database_files = {self.databases_files}, sp_servers = {self.sp_servers}, ss_servers= {self.ss_servers}, default_servers= {self.default_servers}, log_file = {self.log_file}, root_servers = {self.root_servers}"
@@ -30,7 +36,7 @@ class ServerConfig:
             file_content = f.read()
             for line in filter(lambda line: line[0] != '#', file_content.splitlines()):
                 camps = line.split(" ")
-                dom: str = camps[0] + "."
+                dom: str = camps[0]
                 type: str = camps[1]
                 value: str = camps[2]
     

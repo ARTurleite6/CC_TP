@@ -1,5 +1,6 @@
 import socket
 from sys import argv
+from time import sleep
 from utils import DNSMessage
 
 def main():
@@ -7,10 +8,17 @@ def main():
     #     return 
 
     message =  DNSMessage(1, ("example.com.", "MX"), "Q+R") 
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.sendto(message.to_message_str(True).encode('utf8'), ('0.0.0.0', 8080))
+    print(message.to_message_str())
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    msg = "example.com"
+    # s.sendto(message.to_message_str(True).encode('utf-8'), ('0.0.0.0', 8080))
+    s.connect(('0.0.0.0', 8080))
+    s.sendall(msg.encode('utf-8'))
+    while True:
         message, _ = s.recvfrom(1024)
-        print(message.decode('utf-8'))
+        if message:
+            print(message.decode('utf-8'))
+    s.close()
 
 if __name__ == "__main__":
     main()
