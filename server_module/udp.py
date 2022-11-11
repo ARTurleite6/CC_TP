@@ -14,7 +14,7 @@ class UDPClientListener(Thread):
 
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver:
 
-            receiver.bind(('', 0))
+            receiver.bind(('', self.port))
 
             print(f"Estou á escuta no {receiver.getsockname()}")
 
