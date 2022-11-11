@@ -43,7 +43,7 @@ class ServerConfig:
                 if type == "DB":
                     self.databases_files[dom] = value
                     with open(value) as file_db:
-                        lines = file_db.read()
+                        lines = file_db.read().splitlines()
                         self.database_config.read_config_file(lines, Origin.FILE)
                 elif type == "SP":
                     self.sp_servers[dom] = value

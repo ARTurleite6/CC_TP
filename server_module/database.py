@@ -104,13 +104,13 @@ class DatabaseConfig:
         return len(camps) == 4 and all(camp.isdigit() for camp in camps)
         
 
-    def read_config_file(self, database_file: str, origin: Origin):
+    def read_config_file(self, database_file: list[str], origin: Origin):
 
 
         default = {}
 
         concatable_value = ""
-        for line in filter(lambda x: x[0] != '#', database_file.splitlines()):
+        for line in filter(lambda x: x[0] != '#', database_file):
             for (variable, value) in default.items():
                 line = line.replace(variable, value)
 
