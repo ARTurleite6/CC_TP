@@ -1,6 +1,7 @@
 import socket
+from server_module.database import Origin
 
-from server_module.udp import UDPClientListener
+from server_module.udp import UDPClientListener, UDPSSTransferSender
 from server_module.serverconfig import ServerConfig
 from threading import Thread
 
@@ -46,10 +47,10 @@ class TCPZoneTransferSenderController(Thread):
             while True:
                 print("outro ciclo")
                 connection, address = s.accept()
-                msg = connection.recv(1024).decode('utf-8')
-                print(f"received message from {address}, message = {msg}")
-                if msg in self.ss_servers:
-                    servers = self.ss_servers[msg]
+                domain = connection.recv(1024).decode('utf-8')
+                print(f"received message from {address}, message = {domain}")
+                if domain in self.ss_servers:
+                    servers = self.ss_servers[domain]
                     # for server in servers:
                     #     camps = server.split(':')
                     #     port = 5353
@@ -59,26 +60,45 @@ class TCPZoneTransferSenderController(Thread):
                     #
                     #     # if ip == address[0] and port == address[1]:
                     print("Pode receber")
-                    TCPZoneTransferSender(connection, self.files_db[msg]).start()
+                    TCPZoneTransferSender(connection, self.files_db[domain]).start()
 
 class TCPZoneTransferReceiver(Thread):
-    def __init__(self, server: str, domain: str):
+    def __init__(self, server: str, domain: str, server_config: ServerConfig):
         super().__init__()
         camps = server.split(':')
         self.domain = domain
         if len(camps) < 2:
-            self.port = 8080
+            self.port = 5353
             
         self.port = int(camps[1])
         self.server = camps[0]
+        self.server_config = server_config
 
     def run(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as receiver:
             receiver.connect((self.server, self.port))
             msg = self.domain
             receiver.sendall(msg.encode('utf-8'))
+            message = receiver.recv(10)
+            if message:
+                message_dec = message.decode('utf-8')
+                number_lines = int(message_dec)
+                receiver.sendall(message)
 
+                line_counter = 0
+                lines_db = []
+                while line_counter < number_lines:
+                    lines = receiver.recv(1024)
+                    if lines:
+                        lines = lines.decode('utf-8').splitlines()
+                        for line in lines:
+                            line_number = int(line.split(sep=' ', maxsplit=1)[0])
+                            if line_counter == line_number:
+                                lines_db.append(line)
+                                line_counter += 1
 
+                self.server_config.add_database_entries_file(lines_db, Origin.SP) 
+            
 
     
 class Server:
@@ -102,7 +122,7 @@ class Server:
         sps = self.server_config.get_sp_servers()
         threads: list[TCPZoneTransferReceiver] = []
         for (domain, server) in sps:
-            threads.append(TCPZoneTransferReceiver(server, domain))
+            threads.append(TCPZoneTransferReceiver(server, domain, self.server_config))
 
         for thread in threads:
             thread.start() 
@@ -111,6 +131,13 @@ class Server:
             thread.join()
             
         UDPClientListener(self.port, self.server_config).start()
+
+        for (domain, server) in sps:
+            serial_number = int(self.server_config.get_database_values(domain, "SOASERIAL")[0][0].split(sep=' ', maxsplit=3)[2])
+            refresh_time = int(self.server_config.get_database_values(domain, "SOAREFRESH")[0][0].split(sep=' ', maxsplit=3)[2])
+            retry_time = int(self.server_config.get_database_values(domain, "SOARETRY")[0][0].split(sep=' ', maxsplit=3)[2])
+            expire_time = int(self.server_config.get_database_values(domain, "SOAEXPIRE")[0][0].split(sep=' ', maxsplit=3)[2])
+            UDPSSTransferSender(domain=domain, server=server, serial_number=serial_number, refresh_time=refresh_time, retry_time=retry_time, expire_time=expire_time).start()
 
     def __str__(self):
         return f"Server(debug_mode = {self.debug_mode}, server_config = {self.server_config}, port = {self.port}, timeout = {self.timeout})"

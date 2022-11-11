@@ -7,7 +7,7 @@ class Status(Enum):
 
 class Origin(Enum):
     FILE = 0
-    STATUS = 1
+    SP = 1
     OTHER = 2
 
 class CacheEntry:

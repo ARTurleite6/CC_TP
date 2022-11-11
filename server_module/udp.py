@@ -26,11 +26,14 @@ class UDPClientListener(Thread):
 
 class UDPSSTransferSender(Thread):
 
-    def __init__(self, domain: str, server: str, refresh_time: int = 0):
+    def __init__(self, domain: str, server: str, refresh_time: int, serial_number: int, retry_time: int, expire_time: int):
         super().__init__()
         self.domain = domain
-        # self.refresh_time = domain
-        # self.server = server
+        self.serial_number = serial_number
+        self.refresh_time = refresh_time
+        self.retry_time = retry_time
+        self.expire_time = expire_time
+        self.server = server
 
     def run(self):
         while True:
@@ -47,8 +50,7 @@ class UDPQueryAnswer(Thread):
         print(self.message)
         print(f"Received from {self.client_addr}")
         query_info = self.message.get_query_info()
-        cache = self.server_config.get_database_config()
-        answer = cache.get_database_values(query_value=query_info[0], query_type=query_info[1])
+        answer = self.server_config.get_database_values(query_value=query_info[0], query_type=query_info[1])
         # response = db_config.get_lines_type_domain(query_info[1], query_info[0])
         # authorities = db_config.get_lines_type_domain('NS', query_info[0])
         # ips = []

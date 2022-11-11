@@ -26,8 +26,6 @@ class DNSMessage:
         self.response_values = ans_values
         self.auth_values = auth_values
         self.extra_values = extra_values
-            
-
 
     def get_id(self) -> int:
         return self.id
@@ -45,13 +43,13 @@ class DNSMessage:
 
         return '+'.join(camps)
 
-    def encode(self):
-        #TODO encoding a message
-        pass
-    
-    def decode_message(self):
-        #TODO
-        pass
+    def encode(self) -> bytes:
+        id_encode = self.id.to_bytes(2, 'little', signed=False)
+        number_values_bytes = self.number_values.to_bytes(1, 'little')
+        number_authorities_values_bytes = self.number_authorities.to_bytes(1, 'little')
+        number_extra_values_bytes = self.number_extra_values.to_bytes(1, 'little')
+
+        return id_encode
 
     def get_query_info(self) -> tuple[str, str]:
         return self.query_info
@@ -162,3 +160,7 @@ def from_message_str(message: str) -> DNSMessage:
 
     return message_object
 
+
+
+def decode_message_dns(message: bytes) -> DNSMessage:
+    pass
