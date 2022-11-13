@@ -11,7 +11,7 @@ class Origin(Enum):
     OTHER = 2
 
 class CacheEntry:
-    def __init__(self, parametro: str = "", tipo: str = "", valor: str = "", ttl: str = "", prioridade: str = "", origem: Origin = Origin.OTHER, tempo_em_cache: int = 0, status: Status = Status.FREE):
+    def __init__(self, parametro: str = "", tipo: str = "", valor: str = "", ttl: str = "", prioridade: str = "", origem: Origin = Origin.OTHER, tempo_em_cache: int = 0, status: Status = Status.VALID):
         self.parametro = parametro
         self.tipo = tipo
         self.valor = valor
@@ -27,12 +27,35 @@ class CacheEntry:
     def __str__(self):
         return f"CacheEntry(parametro={self.parametro}, tipo={self.tipo}, valor={self.valor}, ttl={self.ttl}, prioridade={self.prioridade}, origem={self.origem}, tempo_em_cache={self.tempo_em_cache}, status={self.status})"
 
+    def is_free(self) -> bool:
+        return self.status == Status.FREE
+
+    def set_free(self) -> None:
+        self.status = Status.FREE
+
+
 class DatabaseConfig:
     def __init__(self, infos: list[CacheEntry] = []):
         self.infos = infos
+        self.domain_lines: dict[str, list[int]] = {}
 
-    def add_entry(self, entry: CacheEntry):
-        self.infos.append(entry)
+    def add_entry(self, entry: CacheEntry, domain: str):
+        free_cell = -1
+        for (index, cell) in enumerate(self.infos):
+            if cell.is_free():
+                free_cell = index
+                break
+
+        if domain not in self.domain_lines:
+            self.domain_lines[domain] = []
+
+        if free_cell == -1:
+            self.infos.append(entry)
+            self.domain_lines[domain].append(len(self.infos) - 1)
+        else:
+            self.infos[free_cell] = entry 
+            self.domain_lines[domain].append(free_cell)
+        # self.infos.append(entry)
 
     def __str__(self):
         string = "DatabaseConfig("
@@ -48,26 +71,26 @@ class DatabaseConfig:
         auths: list[CacheEntry]= []
         ips: list[CacheEntry] = []
         for entry in self.infos:
-            if (entry.parametro == query_value and entry.tipo == query_type):
-                print(entry)
+            if (entry.parametro == query_value and entry.tipo == query_type and not entry.is_free()):
                 res.append(entry)
-            elif query_value == entry.parametro and entry.tipo == "NS":
-                print(entry)
+            elif query_value == entry.parametro and entry.tipo == "NS" and not entry.is_free():
                 auths.append(entry)
 
         for value in res:
             for entry in self.infos:
-                if value.valor == entry.parametro:
+                if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free():
                     ips.append(entry)
 
         for value in auths:
             for entry in self.infos:
-                if value.valor == entry.parametro:
+                if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free():
                     ips.append(entry)
 
         res_str = list(map(lambda entry: entry.get_entry_as_line(), res))
         auths_str = list(map(lambda entry: entry.get_entry_as_line(), auths))
         ips_str = list(map(lambda entry: entry.get_entry_as_line(), ips))
+
+        print("res_tr = ", res_str, "auths = ", auths_str, "ips = ", ips_str)
 
         return(res_str, auths_str, ips_str)
 
@@ -104,8 +127,16 @@ class DatabaseConfig:
         return len(camps) == 4 and all(camp.isdigit() for camp in camps)
         
 
-    def read_config_file(self, database_file: list[str], origin: Origin):
+    def __clean_domain_db__(self, domain):
+        if domain in self.domain_lines:
+            for line in self.domain_lines[domain]:
+                self.infos[line].set_free()
+            
 
+    def read_config_file(self, database_file: list[str], origin: Origin, domain: str):
+
+        self.__clean_domain_db__(domain)
+        print("antes =", self)
 
         default = {}
 
@@ -170,7 +201,8 @@ class DatabaseConfig:
                 # elif type == "PTR":
                 #     pass 
                 # 
-            self.infos.append(CacheEntry(parametro=param, tipo=type, valor=value, ttl=ttl, prioridade=priority, origem=origin, tempo_em_cache=0, status=Status.VALID))
+            print("depois =", self)
+            self.add_entry(CacheEntry(parametro=param, tipo=type, valor=value, ttl=ttl, prioridade=priority, origem=origin, tempo_em_cache=0, status=Status.VALID), domain)
 
 
 

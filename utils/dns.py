@@ -23,6 +23,7 @@ class DNSMessage:
         for i in range(number_values + number_authorities, number_values + number_authorities + number_extra_values):
             extra_values.append(values[i])
 
+
         self.response_values = ans_values
         self.auth_values = auth_values
         self.extra_values = extra_values
@@ -139,22 +140,23 @@ def from_message_str(message: str) -> DNSMessage:
 
     index_values_types = 2
     if n_values != 0:
-        values = camps[index_values_types].split(',')
+        res_values = camps[index_values_types].split(',')
         for i in range(n_values):
-            values.append(values[i])
+            values.append(res_values[i].lstrip())
         index_values_types += 1
 
     if number_authorities != 0:
-        values = camps[index_values_types].split(',')
+        auth_values = camps[index_values_types].split(',')
         for i in range(number_authorities):
-            values.append(values[i])
+            values.append(auth_values[i].lstrip())
         index_values_types += 1
 
     if number_extra_values != 0:
-        values = camps[index_values_types].split(',')
+        extra_values = camps[index_values_types].split(',')
         for i in range(number_extra_values):
-            values.append(values[i])
+            values.append(extra_values[i].lstrip())
         index_values_types += 1
+
 
     message_object = DNSMessage(id=message_id, query_info=(query_info_name, query_info_type), flags=flags, response_code=response_code, values= values, number_extra_values=number_extra_values, number_authorities=number_authorities, number_values=n_values)
 

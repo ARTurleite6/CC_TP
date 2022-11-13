@@ -26,9 +26,9 @@ class ServerConfig:
     def get_database_files(self) -> dict[str, str]:
         return self.databases_files
 
-    def add_database_entries_file(self, database_file: list[str], origin: Origin):
+    def add_database_entries_file(self, database_file: list[str], origin: Origin, dom: str):
         with self.database_lock:
-            self.database_config.read_config_file(database_file, origin)
+            self.database_config.read_config_file(database_file, origin, dom)
 
     # def add_database_config(self, domain: str, config: DatabaseConfig):
     #     self.database_configs[domain] = config
@@ -49,7 +49,7 @@ class ServerConfig:
             file_content = f.read()
             for line in filter(lambda line: line[0] != '#', file_content.splitlines()):
                 camps = line.split(" ")
-                dom: str = camps[0]
+                dom: str = camps[0] + "."
                 type: str = camps[1]
                 value: str = camps[2]
     
@@ -58,7 +58,7 @@ class ServerConfig:
                     with open(value) as file_db:
                         lines = file_db.read().splitlines()
                         with self.database_lock:
-                            self.database_config.read_config_file(lines, Origin.FILE)
+                            self.database_config.read_config_file(lines, Origin.FILE, dom)
                 elif type == "SP":
                     self.sp_servers[dom] = value
                 elif type == "SS":
