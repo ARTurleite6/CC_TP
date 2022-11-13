@@ -39,6 +39,19 @@ class DatabaseConfig:
         self.infos = infos
         self.domain_lines: dict[str, list[int]] = {}
 
+    def has_type_for_domain(self, domain: str, type: str) -> bool:
+        for entry in self.infos:
+            if entry.parametro == domain and entry.tipo == type:
+                return True
+        
+        return False
+
+    def has_domain(self, domain: str) -> bool: 
+        for entry in self.infos:
+            if entry.parametro == domain:
+                return True
+        return False
+
     def add_entry(self, entry: CacheEntry, domain: str):
         free_cell = -1
         for (index, cell) in enumerate(self.infos):
@@ -147,8 +160,8 @@ class DatabaseConfig:
 
             camps = line.split(' ')
             type = camps[1]
-            ttl = "0"
-            priority = "255"
+            ttl = ""
+            priority = ""
 
             tam = len(camps)
 
