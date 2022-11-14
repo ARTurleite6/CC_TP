@@ -9,7 +9,7 @@ def main():
     # if(len(argv) < 5):
     #     return 
 
-    UDPSSTransferSender("example.com.", '0.0.0.0:8081', ServerConfig("test.txt")).start()
+    UDPSSTransferSender("example.com.", '0.0.0.0:8081', ServerConfig("test.txt"), 2).start()
     # while True:
     #     print("running")
     #     sleep(2)

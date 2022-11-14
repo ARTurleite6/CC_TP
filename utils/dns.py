@@ -78,19 +78,25 @@ class DNSMessage:
                 values += "\nEXTRA-VALUES = (Null)"
 
         for (i, value) in enumerate(self.response_values):
-            values += f"\n{pre_res_values}{value}" 
+            if not debug_mode:
+                values += '\n'
+            values += f"{pre_res_values}{value}" 
             if i == number_values - 1:
                 values += ";"
             else:
                 values += ","
         for (i, value) in enumerate(self.auth_values):
-            values += f"\n{pre_auth_values}{value}"
+            if not debug_mode:
+                value += '\n'
+            values += f"{pre_auth_values}{value}"
             if i == num_auth_values - 1:
                 values += ";"
             else:
                 values += ","
         for (i, value) in enumerate(self.extra_values):
-            values += f"\n{pre_extra_values}{value}"
+            if not debug_mode:
+                value += '\n'
+            values += f"{pre_extra_values}{value}"
             if i == num_extra_values - 1:
                 values += ";"
             else:
@@ -98,7 +104,7 @@ class DNSMessage:
         return values
             
  
-    def to_message_str(self, debug_mode = False):
+    def to_message_str(self, debug_mode = True):
 
         if not debug_mode:
             return f"""# Header

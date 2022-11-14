@@ -6,30 +6,28 @@ from server_module.tcp import *
 class Server:
     def __init__(self, port, config_file, timeout, debug_mode = True):
         self.debug_mode = debug_mode
-        self.server_config = ServerConfig(config_file=config_file)
+        self.server_config = ServerConfig(config_file=config_file, debug_mode=True)
         self.port = port
         self.timeout = timeout
 
     def run(self):
         print(self.server_config.databases_files)
-        sss = self.server_config.get_ss_servers()
-        dbs_files = self.server_config.get_database_files()
 
-        TCPZoneTransferSenderController(self.port, sss, dbs_files).start()
+        TCPZoneTransferSenderController(self.port,  self.server_config).start()
 
         # for (domain, servers) in sss.items():
         #     for server in servers:
         #         TCPZoneTransferSender(self.port, server, domain).start() 
         
         sps = self.server_config.get_sp_servers()
-        threads: list[TCPZoneTransferReceiver] = []
+        threads: list[Thread] = []
         for (domain, server) in sps:
             camps = server.split(':')
             server_ip = camps[0]
             port = 5353 
             if len(camps) == 2:
                 port = int(camps[1])
-            threads.append(TCPZoneTransferReceiver(server_ip, port, domain, self.server_config))
+            threads.append(Thread(target=transfer_zone_receive, args=(server_ip, port, domain, self.server_config)))
 
         for thread in threads:
             thread.start() 
@@ -37,12 +35,12 @@ class Server:
         for thread in threads:
             thread.join()
             
-        UDPClientListener(self.port, self.server_config).start()
+        UDPClientListener(self.port, self.server_config, self.timeout).start()
 
         for (domain, server) in sps:
             domain += "."
             print(domain)
-            UDPSSTransferSender(domain=domain, server=server, server_config=self.server_config).start()
+            UDPSSTransferSender(domain=domain, server=server, server_config=self.server_config, ttl=self.timeout).start()
 
     def __str__(self):
         return f"Server(debug_mode = {self.debug_mode}, server_config = {self.server_config}, port = {self.port}, timeout = {self.timeout})"

@@ -22,7 +22,14 @@ class CacheEntry:
         self.status = status
 
     def get_entry_as_line(self):
-        return f"{self.parametro} {self.tipo} {self.valor} {self.ttl} {self.prioridade}"
+        value = f"{self.parametro} {self.tipo} {self.valor}"
+        if self.ttl != "":
+            value += f" {self.ttl}"
+
+        if self.prioridade != "":
+            value += f" {self.prioridade}"
+
+        return value
 
     def __str__(self):
         return f"CacheEntry(parametro={self.parametro}, tipo={self.tipo}, valor={self.valor}, ttl={self.ttl}, prioridade={self.prioridade}, origem={self.origem}, tempo_em_cache={self.tempo_em_cache}, status={self.status})"
@@ -165,11 +172,11 @@ class DatabaseConfig:
 
             tam = len(camps)
 
-            if tam > 4:
-                ttl = camps[4]
+            if tam > 3:
+                ttl = camps[3]
 
-            if tam > 5:
-                priority = camps[5]
+            if tam > 4:
+                priority = camps[4]
 
             if type != "DEFAULT":
                 camps = self.__concat_default_value__(camps, concatable_value)
