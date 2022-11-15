@@ -20,6 +20,9 @@ class ServerConfig:
         self.root_servers: list[str] = []
         self.config_from_file(config_file)
 
+    def has_authority(self, domain: str) -> bool:
+        return domain in self.sp_servers or domain in self.ss_servers
+
     def has_type_for_domain(self, domain: str, type: str) -> bool:
         with self.database_lock:
             return self.database_config.has_type_for_domain(domain, type)

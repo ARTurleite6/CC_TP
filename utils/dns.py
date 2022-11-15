@@ -56,7 +56,7 @@ class DNSMessage:
         return self.query_info
         
     def __str__(self):
-        return self.to_message_str()
+        return self.to_message_str(debug_mode=False)
 
     def __get_values_str__(self, debug_mode = False):
         values = ""
@@ -78,29 +78,29 @@ class DNSMessage:
                 values += "\nEXTRA-VALUES = (Null)"
 
         for (i, value) in enumerate(self.response_values):
-            if not debug_mode:
-                values += '\n'
             values += f"{pre_res_values}{value}" 
             if i == number_values - 1:
                 values += ";"
             else:
                 values += ","
-        for (i, value) in enumerate(self.auth_values):
             if not debug_mode:
-                value += '\n'
+                values += '\n'
+        for (i, value) in enumerate(self.auth_values):
             values += f"{pre_auth_values}{value}"
             if i == num_auth_values - 1:
                 values += ";"
             else:
                 values += ","
-        for (i, value) in enumerate(self.extra_values):
             if not debug_mode:
-                value += '\n'
+                values += '\n'
+        for (i, value) in enumerate(self.extra_values):
             values += f"{pre_extra_values}{value}"
             if i == num_extra_values - 1:
                 values += ";"
             else:
                 values += ","
+            if not debug_mode:
+                values += '\n'
         return values
             
  
@@ -109,9 +109,9 @@ class DNSMessage:
         if not debug_mode:
             return f"""# Header
 MESSAGE-ID = {self.id}, FLAGS = {self.__get__str__from__flags()}, RESPONSE-CODE = {self.response_code},
-N-VALUES = {self.number_values}, N-AUTHORITIES = {self.number_authorities}, N-EXTRA-VALUES = {self.number_extra_values},; # Data: Query Info
+N-VALUES = {self.number_values}, N-AUTHORITIES = {self.number_authorities}, N-EXTRA-VALUES = {self.number_extra_values},;
 # Data: Query Info
-QUERY-INFO.NAME = {self.query_info[0]}, QUERY-INFO.TYPE = {self.query_info[1]},; # Data: List of Response, Authorities and Extra Values 
+QUERY-INFO.NAME = {self.query_info[0]}, QUERY-INFO.TYPE = {self.query_info[1]},;
 # Data: List of Response, Authorities and Extra Values
 {self.__get_values_str__()}"""
         else:

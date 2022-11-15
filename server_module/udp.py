@@ -82,8 +82,6 @@ class UDPSSTransferSender(Thread):
                     print("Passou o tempo de timeout")
                     sleep(self.retry_time)
 
-                    
-                
 
 class UDPQueryAnswer(Thread):
     def __init__(self, server_config: ServerConfig, client_addr, message: bytes, ttl: int):
@@ -99,16 +97,10 @@ class UDPQueryAnswer(Thread):
         self.server_config.log_info("all", f"{datetime.now()} QR {self.client_addr[0]} {self.message.to_message_str()}")
         query_info = self.message.get_query_info()
         answer = self.server_config.get_database_values(query_value=query_info[0], query_type=query_info[1])
-        response_code = 0
 
-        if not self.server_config.has_domain(query_info[0]):
-            response_code = 2
-        elif not self.server_config.has_type_for_domain(query_info[0], query_info[1]):
-            response_code = 1 
+        flags = "R+A"
 
-
-
-        message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="A+R", values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=response_code)
+        message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags=flags, values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
             self.server_config.log_info("all", f"{datetime.now()} RP {self.client_addr[0]} {self.message.to_message_str()}")
