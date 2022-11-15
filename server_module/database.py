@@ -110,8 +110,6 @@ class DatabaseConfig:
         auths_str = list(map(lambda entry: entry.get_entry_as_line(), auths))
         ips_str = list(map(lambda entry: entry.get_entry_as_line(), ips))
 
-        print("res_tr = ", res_str, "auths = ", auths_str, "ips = ", ips_str)
-
         return(res_str, auths_str, ips_str)
 
     # def get_lines_type_domain(self, type, wanted_domain):
@@ -156,7 +154,6 @@ class DatabaseConfig:
     def read_config_file(self, database_file: list[str], origin: Origin, domain: str):
 
         self.__clean_domain_db__(domain)
-        print("antes =", self)
 
         default = {}
 
@@ -221,7 +218,6 @@ class DatabaseConfig:
                 # elif type == "PTR":
                 #     pass 
                 # 
-            print("depois =", self)
             self.add_entry(CacheEntry(parametro=param, tipo=type, valor=value, ttl=ttl, prioridade=priority, origem=origin, tempo_em_cache=0, status=Status.VALID), domain)
 
 

@@ -37,7 +37,6 @@ class ServerConfig:
 
     def get_database_values(self, query_value: str, query_type: str):
         with self.database_lock:
-            print("Aquired database lock")
             return self.database_config.get_database_values(query_value, query_type)
 
     def get_database_files(self) -> dict[str, str]:
@@ -59,7 +58,6 @@ class ServerConfig:
 
     def log_info(self, domain: str, message: str):
         with self.log_lock:
-            print(f"logging to file {domain}")
             logger = logging.getLogger(domain) 
             logger.warning(message)
 
@@ -107,7 +105,6 @@ class ServerConfig:
                     file_handler.setLevel(logging.DEBUG)
                     file_handler.setFormatter(format)
 
-                    print("dom file =",dom)
                     logger = logging.getLogger(dom)
                     logger.addHandler(file_handler)
                     if self.debug_mode:

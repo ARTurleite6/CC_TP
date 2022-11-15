@@ -14,7 +14,6 @@ class TCPZoneTransferSender(Thread):
         self.domain = domain
 
     def run(self):
-        print(f"Abri a transferencia de zona com um cliente")
         begin = datetime.now()
         # msg = "Vamos la comecar chavalo"
         # self.server_socket.sendall(msg.encode('utf-8'))
@@ -22,7 +21,6 @@ class TCPZoneTransferSender(Thread):
             content = list(filter(lambda x: x[0] != '#', file.read().splitlines()))
             total_lines = len(content)
             number_bytes = 0
-            print("tam = ", total_lines)
             self.server_socket.sendall(str(total_lines).encode('utf-8'))
             message = self.server_socket.recv(1024)
             if message:
@@ -44,8 +42,6 @@ class TCPZoneTransferSender(Thread):
                 time_elapsed = int((end - begin).total_seconds() * 1000)
                 self.server_config.log_info(self.domain, f"{datetime.now()} ZT {self.server_socket.getsockname()[0]} SP {time_elapsed} {number_bytes}")
                 pass
-            else:
-                print("Algo correu mal na transferencia de zona")
         self.server_socket.close()
 
 class TCPZoneTransferSenderController(Thread):
@@ -62,7 +58,6 @@ class TCPZoneTransferSenderController(Thread):
             print(f"listening on {s.getsockname()}")
             s.listen()
             while True:
-                print("outro ciclo")
                 connection, address = s.accept()
                 domain = connection.recv(1024).decode('utf-8')
                 print(f"received message from {address}, message = {domain}")
@@ -76,7 +71,6 @@ class TCPZoneTransferSenderController(Thread):
                     #         port = int(camps[1])
                     #
                     #     # if ip == address[0] and port == address[1]:
-                    print("Pode receber")
                     TCPZoneTransferSender(connection, files_db[domain], self.server_config, domain).start()
 
 def transfer_zone_receive(server_ip: str, port: int, domain: str, server_config: ServerConfig) -> bool:

@@ -11,7 +11,6 @@ class Server:
         self.timeout = timeout
 
     def run(self):
-        print(self.server_config.databases_files)
 
         TCPZoneTransferSenderController(self.port,  self.server_config).start()
 
@@ -39,7 +38,6 @@ class Server:
 
         for (domain, server) in sps:
             domain += "."
-            print(domain)
             UDPSSTransferSender(domain=domain, server=server, server_config=self.server_config, ttl=self.timeout).start()
 
     def __str__(self):
