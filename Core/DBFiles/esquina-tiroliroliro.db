@@ -1,0 +1,30 @@
+# DNS database file for domain example.com
+# It also includes a pointer to the primary server
+# of the smaller.example.com subdomain
+
+@ DEFAULT esquina.tiroliroliro.
+TTL DEFAULT 86400
+@ SOASP ns1.esquina.tiroliroliro. TTL
+@ SOAADMIN dns\.admin.esquina.tiroliroliro. TTL
+@ SOASERIAL 0000000000 TTL
+@ SOAREFRESH 14400 TTL
+@ SOARETRY 3600 TTL
+@ SOAEXPIRE 604800 TTL
+
+@ NS ns1.esquina.tiroliroliro. TTL
+@ NS ns2.esquina.tiroliroliro. TTL
+@ NS ns3.esquina.tiroliroliro. TTL
+
+@ MX mx1.esquina.tiroliroliro. TTL
+@ MX mx2.esquina.tiroliroliro. TTL
+
+ns1 A 10.0.16.12 TTL
+ns2 A 10.0.17.12 TTL
+ns3 A 10.0.12.10 TTL
+
+mx1 A 10.0.16.200 TTL
+mx2 A 10.0.16.250 TTL
+
+sp CNAME ns1 TTL
+ss1 CNAME ns2 TTL
+ss2 CNAME ns3 TTL

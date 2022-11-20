@@ -1,0 +1,6 @@
+tirolirolo.concertina DB /var/dns/tirolirolo-concertina.db
+tirolirolo.concertina SS 10.0.17.11
+tirolirolo.concertina SS 10.0.13.10
+tirolirolo.concertina LG /var/dns/tirolirolo-concertina.log
+all LG /var/dns/all.log
+root ST /var/dns/root-servers.db

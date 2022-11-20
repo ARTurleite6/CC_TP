@@ -1,0 +1,4 @@
+. SP 10.0.13.11
+. LG /var/dns/root.log
+all LG /var/dns/all.log
+

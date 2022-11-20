@@ -1,0 +1,4 @@
+tiroliroliro SP 10.0.14.10
+tiroliroliro LG /var/dns/tiroliroliro.log
+all LG /var/dns/all.log
+root ST /var/dns/rootservers.db

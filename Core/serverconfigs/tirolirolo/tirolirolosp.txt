@@ -1,0 +1,6 @@
+tirolirolo DB /var/dns/tirolirolo.db
+tirolirolo SS 10.0.15.11
+tirolirolo SS 10.0.16.11
+tirolirolo LG /var/dns/tirolirolo.log
+all LG /var/dns/all.log
+root ST /var/dns/rootservers.db

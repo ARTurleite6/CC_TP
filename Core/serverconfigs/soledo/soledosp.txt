@@ -1,0 +1,5 @@
+reverse.soledo DB /var/dns/reverse-soledo.db
+reverse.soledo LG /var/dns/reverse-soledo.log
+all LG /var/dns/reverse-soledo.log
+root ST /var/dns/root-servers.db
+

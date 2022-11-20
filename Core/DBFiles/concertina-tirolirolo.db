@@ -1,0 +1,32 @@
+# DNS database file for domain example.com
+# It also includes a pointer to the primary server
+# of the smaller.example.com subdomain
+
+@ DEFAULT concertina.tirolirolo.
+TTL DEFAULT 86400
+@ SOASP ns1.concertina.tirolirolo. TTL
+@ SOAADMIN dns\.admin.concertina.tirolirolo. TTL
+@ SOASERIAL 0000000000 TTL
+@ SOAREFRESH 14400 TTL
+@ SOARETRY 3600 TTL
+@ SOAEXPIRE 604800 TTL
+
+@ NS ns1.concertina.tirolirolo. TTL
+@ NS ns2.concertina.tirolirolo. TTL
+@ NS ns3.concertina.tirolirolo. TTL
+
+@ MX mx1.concertina.tirolirolo. TTL
+@ MX mx2.concertina.tirolirolo. TTL
+
+ns1 A 10.0.12.11 TTL
+ns2 A 10.0.17.11 TTL
+ns3 A 10.0.13.10 TTL
+
+mx1 A 10.0.12.200 TTL
+mx2 A 10.0.12.250 TTL
+
+sp CNAME ns1 TTL
+ss1 CNAME ns2 TTL
+ss2 CNAME ns3 TTL
+mail1 CNAME mx1 TTL
+mail2 CNAME mx2 TTL

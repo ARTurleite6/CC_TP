@@ -1,0 +1,4 @@
+. DB /var/dns/root.db
+. SS 10.0.17.10
+. LG /var/dns/root.log
+all LG /var/dns/all.log

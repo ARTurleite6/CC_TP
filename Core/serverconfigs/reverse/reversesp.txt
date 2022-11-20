@@ -1,0 +1,5 @@
+reverse DB /var/dns/reverse.db
+reverse LG /var/dns/reverse.log
+all LG /var/dns/reverse.log
+root ST /var/dns/root-servers.db
+

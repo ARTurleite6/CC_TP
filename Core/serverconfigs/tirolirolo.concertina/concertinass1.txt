@@ -1,0 +1,4 @@
+tirolirolo.concertina SP 10.0.12.11
+tirolirolo.concertina LG /var/dns/tirolirolo-concertina.log
+all LG /var/dns/all.log
+root ST /var/dns/root-servers.db

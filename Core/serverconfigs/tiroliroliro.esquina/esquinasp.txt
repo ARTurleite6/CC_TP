@@ -1,0 +1,6 @@
+tiroliroliro.esquina DB /var/dns/tiroliroliro-esquina.db
+tiroliroliro.esquina SS 10.0.17.12
+tiroliroliro.esquina SS 10.0.12.10
+tiroliroliro.esquina LG /var/dns/tiroliroliro-esquina.log
+all LG /var/dns/all.log
+root ST /var/dns/root-servers.db
