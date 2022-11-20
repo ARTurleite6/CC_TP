@@ -6,7 +6,7 @@ from server_module.tcp import *
 class Server:
     def __init__(self, port, config_file, timeout, debug_mode = True):
         self.debug_mode = debug_mode
-        self.server_config = ServerConfig(config_file=config_file, debug_mode=True)
+        self.server_config = ServerConfig(config_file=config_file, debug_mode=debug_mode)
         self.port = port
         self.timeout = timeout
 

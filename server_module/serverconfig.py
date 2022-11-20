@@ -9,7 +9,6 @@ class ServerConfig:
     def __init__(self, config_file, debug_mode: bool = False):
         self.debug_mode = debug_mode
         self.databases_files: dict[str, str] = {}
-        self.database_lock = RLock()
         self.log_lock = RLock()
         self.database_config: DatabaseConfig = DatabaseConfig()
         self.sp_servers: dict[str, str] = {}
@@ -20,31 +19,29 @@ class ServerConfig:
         self.root_servers: list[str] = []
         self.config_from_file(config_file)
 
+    def add_expire_ss_timer(self, domain: str, expire_time: int):
+        self.database_config.add_expire_ss_timer(domain, expire_time)
+
     def has_authority(self, domain: str) -> bool:
         return domain in self.sp_servers or domain in self.ss_servers
 
     def has_type_for_domain(self, domain: str, type: str) -> bool:
-        with self.database_lock:
-            return self.database_config.has_type_for_domain(domain, type)
+        return self.database_config.has_type_for_domain(domain, type)
 
     def has_domain(self, domain: str) -> bool: 
-        with self.database_lock:
-            return self.database_config.has_domain(domain)
+        return self.database_config.has_domain(domain)
 
     def get_database_config(self) -> DatabaseConfig:
-        with self.database_lock:
-            return self.database_config
+        return self.database_config
 
     def get_database_values(self, query_value: str, query_type: str):
-        with self.database_lock:
-            return self.database_config.get_database_values(query_value, query_type)
+        return self.database_config.get_database_values(query_value, query_type)
 
     def get_database_files(self) -> dict[str, str]:
         return self.databases_files
 
     def add_database_entries_file(self, database_file: list[str], origin: Origin, dom: str):
-        with self.database_lock:
-            self.database_config.read_config_file(database_file, origin, dom)
+        self.database_config.read_config_file(database_file, origin, dom)
 
     def get_ss_servers(self) -> dict[str, list[str]]:
         return self.ss_servers
@@ -52,14 +49,17 @@ class ServerConfig:
     def get_sp_servers(self) -> dict[str, str]:
         return self.sp_servers
 
-    def __str__(self):
-        with self.database_lock:
-            return f"ServerConfig( databases_configs= {self.database_config}, database_files = {self.databases_files}, sp_servers = {self.sp_servers}, ss_servers= {self.ss_servers}, default_servers= {self.default_servers}, log_file = {self.all_log_file}, root_servers = {self.root_servers}, log_files_domain = {self.log_files_domain}"
-
     def log_info(self, domain: str, message: str):
         with self.log_lock:
-            logger = logging.getLogger(domain) 
-            logger.warning(message)
+            if domain in self.log_files_domain: 
+                logger = logging.getLogger(domain) 
+                logger.warning(message)
+            else:
+                logger = logging.getLogger("all")
+                logger.warning(message)
+
+    def __str__(self):
+            return f"ServerConfig( databases_configs= {self.database_config}, database_files = {self.databases_files}, sp_servers = {self.sp_servers}, ss_servers= {self.ss_servers}, default_servers= {self.default_servers}, log_file = {self.all_log_file}, root_servers = {self.root_servers}, log_files_domain = {self.log_files_domain}"
 
     def config_from_file(self, file: str):
 
@@ -78,12 +78,12 @@ class ServerConfig:
     
                 if type == "DB":
                     self.databases_files[dom] = value
-                    with open(value) as file_db:
-                        lines = file_db.read().splitlines()
-                        with self.database_lock:
-                            time_read = datetime.datetime.now()
-                            self.log_info("all", f"{time_read} EV @ db-file-read {value}")
-                            self.database_config.read_config_file(lines, Origin.FILE, dom)
+                    # with open(value) as file_db:
+                    #     lines = file_db.read().splitlines()
+                    #     with self.database_lock:
+                    #         time_read = datetime.datetime.now()
+                    #         self.log_info("all", f"{time_read} EV @ db-file-read {value}")
+                    #         self.database_config.read_config_file(lines, Origin.FILE, dom)
                 elif type == "SP":
                     self.sp_servers[dom] = value
                 elif type == "SS":
@@ -108,6 +108,7 @@ class ServerConfig:
                     logger = logging.getLogger(dom)
                     logger.addHandler(file_handler)
                     if self.debug_mode:
+                        print("console mode")
                         console_handler = logging.StreamHandler()
                         console_handler.setLevel(logging.DEBUG)
                         console_handler.setFormatter(format)
@@ -119,5 +120,12 @@ class ServerConfig:
                     self.default_servers[dom].append(value)
 
             self.log_info("all", f"{time_initialized_read} EV @ conf-file-read {file}")
+
+        for dom, value in self.databases_files.items():
+            with open(value) as file_db:
+                lines = file_db.read().splitlines()
+                time_read = datetime.datetime.now()
+                self.log_info(dom, f"{time_read} EV @ db-file-read {value}")
+                self.database_config.read_config_file(lines, Origin.FILE, dom)
 
 

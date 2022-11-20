@@ -53,6 +53,13 @@ class UDPSSTransferSender(Thread):
         self.expire_time = int(self.server_config.get_database_values(self.domain, "SOAEXPIRE")[0][0].split(sep=' ', maxsplit=3)[2])
         print(self)
 
+    def __check_valid_camps__(self) -> bool:
+        values = self.server_config.get_database_values(self.domain, "SOASERIAL")[0]
+        if len(values) == 0:
+            return False
+
+        return True
+
     def run(self) -> None:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             message = DNSMessage(randint(1, 65535), (self.domain, "SOASERIAL"), "Q")
@@ -67,11 +74,12 @@ class UDPSSTransferSender(Thread):
                         print("Provavelmente houve um erro na rececao da mensagem")
                         break;
                     serial_number = int(message.response_values[0].split(' ')[2])
-                    if serial_number != self.serial_number:
+                    if not self.__check_valid_camps__() or serial_number != self.serial_number:
                         print("vamos tentar")
                         transfer_status = transfer_zone_receive(domain=self.domain, server_ip=self.server_ip, port=self.port, server_config=self.server_config)
                         if transfer_status:
                             self.__update_values__()
+                            self.server_config.add_expire_ss_timer(self.domain, self.expire_time)
                             sleep(self.refresh_time)
                         else:
                             self.server_config.log_info(domain=self.domain, message=f"{datetime.now()} EZ {self.server_ip} SS") 
@@ -94,8 +102,8 @@ class UDPQueryAnswer(Thread):
     def run(self) -> None:
         print(self.message)
         print(f"Received from {self.client_addr}")
-        self.server_config.log_info("all", f"{datetime.now()} QR {self.client_addr[0]} {self.message.to_message_str()}")
         query_info = self.message.get_query_info()
+        self.server_config.log_info(query_info[0], f"{datetime.now()} QR {self.client_addr[0]} {self.message.to_message_str()}")
         answer = self.server_config.get_database_values(query_value=query_info[0], query_type=query_info[1])
 
         flags = "R+A"
@@ -103,5 +111,5 @@ class UDPQueryAnswer(Thread):
         message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags=flags, values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
-            self.server_config.log_info("all", f"{datetime.now()} RP {self.client_addr[0]} {message.to_message_str()}")
+            self.server_config.log_info(query_info[0], f"{datetime.now()} RP {self.client_addr[0]} {message.to_message_str()}")
 

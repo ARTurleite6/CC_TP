@@ -5,10 +5,10 @@
 TTL DEFAULT 86400
 @ SOASP ns1.example.com. TTL
 @ SOAADMIN dns\.admin.example.com. TTL
-@ SOASERIAL 0117102023 TTL
+@ SOASERIAL 0117102029 TTL
 @ SOAREFRESH 2 TTL
 @ SOARETRY 3 TTL
-@ SOAEXPIRE 604800 TTL
+@ SOAEXPIRE 10 TTL
 @ NS ns1.example.com. TTL
 @ NS ns2.example.com. TTL
 @ NS ns3.example.com. TTL

@@ -1,5 +1,5 @@
 from enum import Enum
-
+from threading import RLock, Timer
 
 class Status(Enum):
     FREE = 0
@@ -43,74 +43,87 @@ class CacheEntry:
 
 class DatabaseConfig:
     def __init__(self, infos: list[CacheEntry] = []):
+        self.lock = RLock()
         self.infos = infos
-        self.domain_lines: dict[str, list[int]] = {}
+        self.ss_domain_lines: dict[str, set[int]] = {}
+        self.clean_ss_lines: dict[str, Timer] = {}
+
+    def __free_line__(self, line: int):
+        with self.lock:
+            if len(self.infos) > line:
+                self.infos[line].set_free()
 
     def has_type_for_domain(self, domain: str, type: str) -> bool:
-        for entry in self.infos:
-            if entry.parametro == domain and entry.tipo == type:
-                return True
+        with self.lock:
+            for entry in self.infos:
+                if entry.parametro == domain and entry.tipo == type:
+                    return True
+            return False
         
-        return False
-
     def has_domain(self, domain: str) -> bool: 
-        for entry in self.infos:
-            if entry.parametro == domain:
-                return True
-        return False
+        with self.lock:
+            for entry in self.infos:
+                if entry.parametro == domain:
+                    return True
+            return False
 
-    def add_entry(self, entry: CacheEntry, domain: str):
-        free_cell = -1
-        for (index, cell) in enumerate(self.infos):
-            if cell.is_free():
-                free_cell = index
-                break
+    def add_entry(self, entry: CacheEntry, domain: str = ""):
+        with self.lock:
+            free_cell = -1
+            for (index, cell) in enumerate(self.infos):
+                if cell.is_free():
+                    free_cell = index
+                    break
 
-        if domain not in self.domain_lines:
-            self.domain_lines[domain] = []
+            if domain != "" and domain not in self.ss_domain_lines:
+                self.ss_domain_lines[domain] = set()
 
-        if free_cell == -1:
-            self.infos.append(entry)
-            self.domain_lines[domain].append(len(self.infos) - 1)
-        else:
-            self.infos[free_cell] = entry 
-            self.domain_lines[domain].append(free_cell)
-        # self.infos.append(entry)
+            if free_cell == -1:
+                self.infos.append(entry)
+                if domain != "":
+                    self.ss_domain_lines[domain].add(len(self.infos) - 1)
+            else:
+                self.infos[free_cell] = entry 
+                if domain != "":
+                    self.ss_domain_lines[domain].add(free_cell)
 
     def __str__(self):
-        string = "DatabaseConfig("
-        for inf in self.infos:
-            string += inf.__str__() + ", \n"
+        with self.lock:
+            string = "DatabaseConfig("
+            for inf in self.infos:
+                string += inf.__str__() + ", \n"
 
-        string +=");"
-        return string;
+            string +=");"
+            return string;
             
 
     def get_database_values(self, query_value, query_type) -> tuple[list[str], list[str], list[str]]:
-        res: list[CacheEntry] = []
-        auths: list[CacheEntry]= []
-        ips: list[CacheEntry] = []
-        for entry in self.infos:
-            if (entry.parametro == query_value and entry.tipo == query_type and not entry.is_free()):
-                res.append(entry)
-            elif query_value == entry.parametro and entry.tipo == "NS" and not entry.is_free():
-                auths.append(entry)
+        with self.lock:
+            res: list[CacheEntry] = []
+            auths: list[CacheEntry]= []
+            ips: list[CacheEntry] = []
 
-        for value in res:
             for entry in self.infos:
-                if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free():
-                    ips.append(entry)
+                if (entry.parametro == query_value and entry.tipo == query_type and not entry.is_free()):
+                    res.append(entry)
+                elif query_value == entry.parametro and entry.tipo == "NS" and not entry.is_free():
+                    auths.append(entry)
 
-        for value in auths:
-            for entry in self.infos:
-                if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free():
-                    ips.append(entry)
+            for value in res:
+                for entry in self.infos:
+                    if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free():
+                        ips.append(entry)
 
-        res_str = list(map(lambda entry: entry.get_entry_as_line(), res))
-        auths_str = list(map(lambda entry: entry.get_entry_as_line(), auths))
-        ips_str = list(map(lambda entry: entry.get_entry_as_line(), ips))
+            for value in auths:
+                for entry in self.infos:
+                    if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free():
+                        ips.append(entry)
 
-        return(res_str, auths_str, ips_str)
+            res_str = list(map(lambda entry: entry.get_entry_as_line(), res))
+            auths_str = list(map(lambda entry: entry.get_entry_as_line(), auths))
+            ips_str = list(map(lambda entry: entry.get_entry_as_line(), ips))
+
+            return(res_str, auths_str, ips_str)
 
     # def get_lines_type_domain(self, type, wanted_domain):
     #     values = []
@@ -145,15 +158,24 @@ class DatabaseConfig:
         return len(camps) == 4 and all(camp.isdigit() for camp in camps)
         
 
+    def add_expire_ss_timer(self, domain: str, expire_time: int):
+        if domain in self.clean_ss_lines:
+            self.clean_ss_lines[domain].cancel()
+
+        self.clean_ss_lines[domain] = Timer(expire_time, self.__clean_domain_db__, [domain])
+        self.clean_ss_lines[domain].start()
+
     def __clean_domain_db__(self, domain):
-        if domain in self.domain_lines:
-            for line in self.domain_lines[domain]:
-                self.infos[line].set_free()
-            
+        with self.lock:
+            if domain in self.ss_domain_lines:
+                for line in self.ss_domain_lines[domain]:
+                    self.infos[line].set_free()
+
+                self.ss_domain_lines[domain].clear()
 
     def read_config_file(self, database_file: list[str], origin: Origin, domain: str):
-
-        self.__clean_domain_db__(domain)
+        if origin == Origin.SP:
+            self.__clean_domain_db__(domain)
 
         default = {}
 
@@ -178,47 +200,17 @@ class DatabaseConfig:
             if type != "DEFAULT":
                 camps = self.__concat_default_value__(camps, concatable_value)
 
-            # if type not in self.lines:
-            #     self.lines[type] = []
-            # self.lines[type].append(" ".join(camps))
-
             param = camps[0]
             value = camps[2]
-            #
             if type == "DEFAULT":
                 if param not in default:
                     default[param] = value
                     if param == "@":
                         concatable_value = value
-                # elif type == "SOASP":
-                #     self.name[param] = (value, ttl)
-                # elif type == "SOAADMIN":
-                #     self.administrator[param] = (value, ttl)
-                # elif type == "SOASERIAL":
-                #     self.serial_number[param] = (int(value), ttl)
-                # elif type == "SOAREFRESH":
-                #     self.refresh[param] = (int(value), ttl)
-                # elif type == "SOARETRY":
-                #     self.retry[param] = (int(value), ttl)
-                # elif type == "SOAEXPIRE":
-                #     self.expire[param] = (int(value), ttl)
-                # elif type == "NS":
-                #     if param not in self.ns:
-                #         self.ns[param] = []
-                #     self.ns[param].append((value, ttl, priority))
-                # elif type == "A":
-                #     self.ips[param] = (value, ttl, priority)
-                # elif type == "CNAME":
-                #     if value not in self.cname and param not in self.cname:
-                #         self.cname[param] = (value, ttl)
-                # elif type == "MX":
-                #     if param not in self.emails:
-                #         self.emails[param] = []
-                #     self.emails[param].append((value, ttl, priority))
-                # elif type == "PTR":
-                #     pass 
-                # 
             self.add_entry(CacheEntry(parametro=param, tipo=type, valor=value, ttl=ttl, prioridade=priority, origem=origin, tempo_em_cache=0, status=Status.VALID), domain)
+
+
+        
 
 
 

@@ -33,15 +33,6 @@ class TCPZoneTransferSender(Thread):
                         number_bytes += len(message_content)
                         counter += 1
 
-                    
-        message = self.server_socket.recv(1024)
-        if message:
-            message = message.decode('utf-8')
-            if message == "concluido":
-                end = datetime.now()
-                time_elapsed = int((end - begin).total_seconds() * 1000)
-                self.server_config.log_info(self.domain, f"{datetime.now()} ZT {self.server_socket.getsockname()[0]} SP {time_elapsed} {number_bytes}")
-                pass
         self.server_socket.close()
 
 class TCPZoneTransferSenderController(Thread):
@@ -98,12 +89,7 @@ def transfer_zone_receive(server_ip: str, port: int, domain: str, server_config:
 
             if line_counter == number_lines:
                 server_config.add_database_entries_file(lines_db, Origin.SP, domain) 
-                receiver.sendall("concluido".encode('utf-8'))
                 return True
-            else:
-                receiver.sendall("Errou a transferencia".encode('utf-8'))
-                return False
-        receiver.sendall("Errou a transferencia".encode('utf-8'))
         return False
 
 # class TCPZoneTransferReceiver():
