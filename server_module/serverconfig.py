@@ -1,7 +1,11 @@
 import datetime
 import logging
+import sys
 
+from exceptions import SameDomainSPSSexception
 from threading import RLock
+from exceptions import NonSPSSServerLogFileException
+from exceptions.serverexceptions import AllLogFileNotReceivedException
 from server_module.database import DatabaseConfig
 from server_module.database import Origin
 
@@ -17,7 +21,26 @@ class ServerConfig:
         self.all_log_file = ""
         self.log_files_domain: set[str] = set()
         self.root_servers: list[str] = []
-        self.config_from_file(config_file)
+        try:
+            self.config_from_file(config_file)
+        except SameDomainSPSSexception:
+            self.log_info("all", f"{datetime.datetime.now()} FL 127.0.0.1 Server is SP and SS for the same domain") 
+            self.log_info("all", f"{datetime.datetime.now()} SP 127.0.0.1 Error reading config file")
+            sys.exit()
+        except NonSPSSServerLogFileException:
+            self.log_info("all", f"{datetime.datetime.now()} FL 127.0.0.1 Received a log file for a domain which server isn´t SP nor SS")
+            self.log_info("all", f"{datetime.datetime.now()} SP 127.0.0.1 Error reading config file")
+            sys.exit()
+        except AllLogFileNotReceivedException:
+            self.log_info("all", f"{datetime.datetime.now()} FL 127.0.0.1 Server didn´t receive a entry for a all log file")
+            self.log_info("all", f"{datetime.datetime.now()} SP 127.0.0.1 Error reading config file")
+            sys.exit()
+
+    def can_answer_domain(self, domain: str) -> bool:
+        if len(self.default_servers) == 0:
+            return True
+
+        return domain in self.default_servers
 
     def add_expire_ss_timer(self, domain: str, expire_time: int):
         self.database_config.add_expire_ss_timer(domain, expire_time)
@@ -121,11 +144,24 @@ class ServerConfig:
 
             self.log_info("all", f"{time_initialized_read} EV @ conf-file-read {file}")
 
+        #Reading all database files
         for dom, value in self.databases_files.items():
+            if dom in self.sp_servers:
+                raise SameDomainSPSSexception()
             with open(value) as file_db:
                 lines = file_db.read().splitlines()
                 time_read = datetime.datetime.now()
                 self.log_info(dom, f"{time_read} EV @ db-file-read {value}")
                 self.database_config.read_config_file(lines, Origin.FILE, dom)
+
+        #Test if the server as a all log entry
+        if self.all_log_file == "":
+            raise AllLogFileNotReceivedException()
+
+        #Test if all server is SP or SS for log files
+        for log_file in self.log_files_domain:
+            if log_file not in self.databases_files or self.sp_servers:
+                raise NonSPSSServerLogFileException()
+
 
 

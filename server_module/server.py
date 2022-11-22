@@ -1,7 +1,11 @@
+import signal
+import sys
+
 from server_module.udp import UDPClientListener, UDPSSTransferSender
 from server_module.serverconfig import ServerConfig
-from server_module.tcp import *
-
+from server_module.tcp import TCPZoneTransferSenderController, transfer_zone_receive
+from threading import Thread
+from datetime import datetime
     
 class Server:
     def __init__(self, port, config_file, timeout, debug_mode = True):
@@ -12,12 +16,12 @@ class Server:
 
     def run(self):
 
+        signal.signal(signal.SIGINT, self.shutdown)
+
+        mode = "debug" if self.debug_mode else "shy"
+        self.server_config.log_info("all", f"{datetime.now()} ST 127.0.0.1 {self.timeout} {mode}")
         TCPZoneTransferSenderController(self.port,  self.server_config).start()
 
-        # for (domain, servers) in sss.items():
-        #     for server in servers:
-        #         TCPZoneTransferSender(self.port, server, domain).start() 
-        
         sps = self.server_config.get_sp_servers()
         threads: list[Thread] = []
         for (domain, server) in sps:
@@ -39,6 +43,10 @@ class Server:
         for (domain, server) in sps:
             domain += "."
             UDPSSTransferSender(domain=domain, server=server, server_config=self.server_config, ttl=self.timeout).start()
+
+    def shutdown(self, _signal_number_, _frame):
+        self.server_config.log_info("all", f"{datetime.now} SP 127.0.0.1 Terminated SIGINT")
+        sys.exit()
 
     def __str__(self):
         return f"Server(debug_mode = {self.debug_mode}, server_config = {self.server_config}, port = {self.port}, timeout = {self.timeout})"

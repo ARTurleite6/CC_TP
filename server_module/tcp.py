@@ -1,9 +1,12 @@
-from datetime import datetime
 import socket
 
+from datetime import datetime
+from time import time, sleep
 from server_module.serverconfig import ServerConfig
 from server_module.database import Origin
 from threading import Thread
+
+TTL_TRANSFER = 5
 
 class TCPZoneTransferSender(Thread):
     def __init__(self, server_socket, db_file: str, server_config: ServerConfig, domain: str):
@@ -70,26 +73,30 @@ def transfer_zone_receive(server_ip: str, port: int, domain: str, server_config:
         msg = domain
         receiver.sendall(msg.encode('utf-8'))
         message = receiver.recv(10)
+        # test if received message
         if message:
             message_dec = message.decode('utf-8')
             number_lines = int(message_dec)
             receiver.sendall(message)
             line_counter = 0
             lines_db = []
-            while line_counter < number_lines:
-                lines = receiver.recv(1024)
-                if lines:
-                    lines = lines.decode('utf-8').splitlines()
-                    for line in lines:
-                        line_camps = line.split(sep= ' ', maxsplit=1)
-                        line_number = int(line_camps[0])
-                        if line_counter == line_number:
-                            lines_db.append(line_camps[1])
-                            line_counter += 1
+            try:
+                while line_counter < number_lines:
+                    lines = receiver.recv(1024)
+                    if lines:
+                        lines = lines.decode('utf-8').splitlines()
+                        for line in lines:
+                            line_camps = line.split(sep= ' ', maxsplit=1)
+                            line_number = int(line_camps[0])
+                            if line_counter == line_number:
+                                lines_db.append(line_camps[1])
+                                line_counter += 1
 
-            if line_counter == number_lines:
-                server_config.add_database_entries_file(lines_db, Origin.SP, domain) 
-                return True
+                if line_counter == number_lines:
+                    server_config.add_database_entries_file(lines_db, Origin.SP, domain) 
+                    return True
+            except TimeoutError:
+                return False 
         return False
 
 # class TCPZoneTransferReceiver():
