@@ -1,7 +1,6 @@
 import socket
 
 from datetime import datetime, timedelta
-from time import time, sleep
 from server_module.serverconfig import ServerConfig
 from server_module.database import Origin
 from threading import Thread
@@ -28,7 +27,6 @@ class TCPZoneTransferSender(Thread):
                 number_lines_received = int(message.decode('utf-8'))
                 if number_lines_received == total_lines:
                     counter = 0
-                    sleep(10)
                     for line in content:
                         message_content = f"{counter} {line}\n"
                         try:
