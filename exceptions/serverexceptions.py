@@ -12,3 +12,8 @@ class AllLogFileNotReceivedException(Exception):
     def __init__(self, message="You need to determine a file for log file with param all"):
         self.message = message
         super().__init__(message)
+
+class NonDBWithSSEntryException(Exception):
+    def __init__(self, message="You need to pass a database file in order to have a SS Entry for a domain"):
+        self.message = message
+        super().__init__(message)

@@ -5,7 +5,7 @@ import sys
 from exceptions import SameDomainSPSSexception
 from threading import RLock
 from exceptions import NonSPSSServerLogFileException
-from exceptions.serverexceptions import AllLogFileNotReceivedException
+from exceptions.serverexceptions import AllLogFileNotReceivedException, NonDBWithSSEntryException
 from server_module.database import DatabaseConfig
 from server_module.database import Origin
 
@@ -29,10 +29,10 @@ class ServerConfig:
             sys.exit()
         except NonSPSSServerLogFileException:
             self.log_info("all", f"{datetime.datetime.now()} FL 127.0.0.1 Received a log file for a domain which server isn´t SP nor SS")
-            self.log_info("all", f"{datetime.datetime.now()} SP 127.0.0.1 Error reading config file")
-            sys.exit()
         except AllLogFileNotReceivedException:
             self.log_info("all", f"{datetime.datetime.now()} FL 127.0.0.1 Server didn´t receive a entry for a all log file")
+        except NonDBWithSSEntryException:
+            self.log_info("all", f"{datetime.datetime.now()} FL 127.0.0.1 Server didn´t receive a DB file for SS entries")
             self.log_info("all", f"{datetime.datetime.now()} SP 127.0.0.1 Error reading config file")
             sys.exit()
 
@@ -81,6 +81,22 @@ class ServerConfig:
                 logger = logging.getLogger("all")
                 logger.warning(message)
 
+    def __set_logger_file__(self, dom, value):
+        format = logging.Formatter("%(message)s")
+        file_handler = logging.FileHandler(value)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(format)
+
+        logger = logging.getLogger(dom)
+        logger.addHandler(file_handler)
+        if self.debug_mode:
+            print("console mode")
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.DEBUG)
+            console_handler.setFormatter(format)
+            logger.addHandler(console_handler)
+            
+
     def __str__(self):
             return f"ServerConfig( databases_configs= {self.database_config}, database_files = {self.databases_files}, sp_servers = {self.sp_servers}, ss_servers= {self.ss_servers}, default_servers= {self.default_servers}, log_file = {self.all_log_file}, root_servers = {self.root_servers}, log_files_domain = {self.log_files_domain}"
 
@@ -123,19 +139,20 @@ class ServerConfig:
                     else:
                         self.log_files_domain.add(dom)
 
-                    format = logging.Formatter("%(message)s")
-                    file_handler = logging.FileHandler(value)
-                    file_handler.setLevel(logging.DEBUG)
-                    file_handler.setFormatter(format)
-
-                    logger = logging.getLogger(dom)
-                    logger.addHandler(file_handler)
-                    if self.debug_mode:
-                        print("console mode")
-                        console_handler = logging.StreamHandler()
-                        console_handler.setLevel(logging.DEBUG)
-                        console_handler.setFormatter(format)
-                        logger.addHandler(console_handler)
+                    self.__set_logger_file__(dom, value)
+                    # format = logging.Formatter("%(message)s")
+                    # file_handler = logging.FileHandler(value)
+                    # file_handler.setLevel(logging.DEBUG)
+                    # file_handler.setFormatter(format)
+                    #
+                    # logger = logging.getLogger(dom)
+                    # logger.addHandler(file_handler)
+                    # if self.debug_mode:
+                    #     print("console mode")
+                    #     console_handler = logging.StreamHandler()
+                    #     console_handler.setLevel(logging.DEBUG)
+                    #     console_handler.setFormatter(format)
+                    #     logger.addHandler(console_handler)
 
                 elif type == "DD":
                     if dom not in self.default_servers:
@@ -143,6 +160,10 @@ class ServerConfig:
                     self.default_servers[dom].append(value)
 
             self.log_info("all", f"{time_initialized_read} EV @ conf-file-read {file}")
+
+        for dom in self.ss_servers.keys():
+            if dom not in self.databases_files:
+                raise NonDBWithSSEntryException()
 
         #Reading all database files
         for dom, value in self.databases_files.items():
@@ -156,6 +177,8 @@ class ServerConfig:
 
         #Test if the server as a all log entry
         if self.all_log_file == "":
+            self.all_log_file = "var/dns/all.log"
+            self.__set_logger_file__("all", self.all_log_file)
             raise AllLogFileNotReceivedException()
 
         #Test if all server is SP or SS for log files
