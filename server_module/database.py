@@ -41,7 +41,7 @@ class CacheEntry:
         self.status = Status.FREE
 
 
-class DatabaseConfig:
+class CacheConfig:
     def __init__(self, infos: list[CacheEntry] = []):
         self.lock = RLock()
         self.infos = infos
@@ -97,7 +97,7 @@ class DatabaseConfig:
             return string;
             
 
-    def get_database_values(self, query_value, query_type) -> tuple[list[str], list[str], list[str]]:
+    def get_cache_values(self, query_value, query_type) -> tuple[list[str], list[str], list[str]]:
         with self.lock:
             res: list[CacheEntry] = []
             auths: list[CacheEntry]= []
@@ -125,21 +125,6 @@ class DatabaseConfig:
 
             return(res_str, auths_str, ips_str)
 
-    # def get_lines_type_domain(self, type, wanted_domain):
-    #     values = []
-    #     lines_type = self.lines[type]
-    #     for line in lines_type:
-    #         domain = line.split(' ')[0]
-    #         if domain == wanted_domain:
-    #             values.append(line)
-    #     return values
-
-    # def get_emails(self, domain: str) -> list[tuple[str, int, int]]:
-    #     return self.emails[domain]
-    #
-    # def get_authorities(self, domain: str) -> list[tuple[str, int, int]]:
-    #     return self.ns[domain]
-
     def __concat_default_value__(self, words: list[str], concat_value: str) -> list[str]:
         if concat_value == "":
             return words
@@ -165,7 +150,7 @@ class DatabaseConfig:
         self.clean_ss_lines[domain] = Timer(expire_time, self.__clean_domain_db__, [domain])
         self.clean_ss_lines[domain].start()
 
-    def __clean_domain_db__(self, domain):
+    def __clean_domain_db__(self, domain: str):
         with self.lock:
             if domain in self.ss_domain_lines:
                 for line in self.ss_domain_lines[domain]:
@@ -173,7 +158,7 @@ class DatabaseConfig:
 
                 self.ss_domain_lines[domain].clear()
 
-    def read_config_file(self, database_file: list[str], origin: Origin, domain: str):
+    def read_database_file(self, database_file: list[str], origin: Origin, domain: str):
         if origin == Origin.SP:
             self.__clean_domain_db__(domain)
 
