@@ -57,15 +57,15 @@ class TCPZoneTransferSenderController(Thread):
                 print(f"received message from {address}, message = {domain}")
                 if domain in ss_servers:
                     servers = ss_servers[domain]
-                    # for server in servers:
-                    #     camps = server.split(':')
-                    #     port = 5353
-                    #     ip = camps[0]
-                    #     if len(camps) == 2:
-                    #         port = int(camps[1])
-                    #
-                    #     # if ip == address[0] and port == address[1]:
-                    TCPZoneTransferSender(connection, files_db[domain], self.server_config, domain).start()
+                    for server in servers:
+                        camps = server.split(':')
+                        port = 5353
+                        ip = camps[0]
+                        if len(camps) == 2:
+                            port = int(camps[1])
+
+                        if ip == address[0] and port == address[1]:
+                            TCPZoneTransferSender(connection, files_db[domain], self.server_config, domain).start()
 
 def transfer_zone_receive(server_ip: str, port: int, domain: str, server_config: ServerConfig) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as receiver:
