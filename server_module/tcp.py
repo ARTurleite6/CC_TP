@@ -22,19 +22,25 @@ class TCPZoneTransferSender(Thread):
         with open(self.db_file) as file:
             content = list(filter(lambda x: x[0] != '#', file.read().splitlines()))
             total_lines = len(content)
-            number_bytes = 0
             self.server_socket.sendall(str(total_lines).encode('utf-8'))
             message = self.server_socket.recv(1024)
             if message:
                 number_lines_received = int(message.decode('utf-8'))
                 if number_lines_received == total_lines:
                     counter = 0
+                    sleep(10)
                     for line in content:
                         message_content = f"{counter} {line}\n"
-                        self.server_socket.sendall((message_content.encode('utf-8')))
-                        number_bytes += len(message_content)
+                        try:
+                            self.server_socket.sendall((message_content.encode('utf-8')))
+                        except OSError:
+                            print("client closed")
+                            break
                         counter += 1
-                        self.server_config.log_info(self.domain, f"{datetime.now()} ZT {self.server_socket.gethostname()} SP")
+                    if counter == total_lines:
+                        self.server_config.log_info(self.domain, f"{datetime.now()} ZT {self.server_socket.getsockname()} SP")
+                    else:
+                        self.server_config.log_info(self.domain, f"{datetime.now()} EZ {self.server_socket.getsockname()} SP")
 
         self.server_socket.close()
 
