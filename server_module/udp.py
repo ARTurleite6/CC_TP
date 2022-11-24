@@ -101,7 +101,6 @@ class UDPQueryAnswer(Thread):
         self.ttl = ttl
 
     def run(self) -> None:
-        print(self.message)
         print(f"Received from {self.client_addr}")
         query_info = self.message.get_query_info()
         self.server_config.log_info(query_info[0], f"{datetime.now()} QR {self.client_addr[0]} {self.message.to_message_str()}")
