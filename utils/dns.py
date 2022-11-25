@@ -31,64 +31,6 @@ class DNSMessage:
     def get_id(self) -> int:
         return self.id
             
-    def __encode_value__(self, value: str) -> bytes | None:
-        camps = value.split(' ') 
-        parameter = camps[0]
-        type = camps[1]
-        value_camp = camps[2]
-        ttl = "" if len(camps) > 3 else camps[3]
-        priority = "" if len(camps) > 4 else camps[4]
-
-        parameter_length = len(parameter).to_bytes(1, 'big', signed=False)
-        parameter = parameter.encode('ascii')
-        type = self.__encode_type_query_info__(type)
-        if type is None:
-            return None
-        value_length = len(value_camp).to_bytes(1, 'big', signed=False)
-        value_camp = value_camp.encode('ascii')
-        ttl_existence = (1 if ttl != "" else 0).to_bytes(1, 'big', signed=False)
-        priority_existence = (1 if priority != "" else 0).to_bytes(1, 'big', signed=False)
-
-        res = parameter_length + parameter + type + value_length + value_camp + ttl_existence
-        if ttl != "":
-            res += int(ttl).to_bytes(4, 'big', signed=False)
-        res += priority_existence
-        if priority != "":
-            res += int(priority).to_bytes(1, 'big', signed=False)
-        return res
-            
-
-
-    def __encode_type_query_info__(self, type: str) -> bytes | None:
-        value = -1
-        if type == "DEFAULT":
-            value = 0b00000000
-        elif type == "SOASP":
-            value = 0b00000001
-        elif type == "SOAADMIN":
-            value = 0b00000010
-        elif type == "SOASERIAL":
-            value = 0b00000011
-        elif type == "SOAREFRESH":
-            value = 0b00000100
-        elif type == "SOARETRY":
-            value = 0b00000101
-        elif type == "SOAEXPIRE":
-            value = 0b00000110
-        elif type == "NS":
-            value = 0b00000111
-        elif type == "A":
-            value = 0b00001000
-        elif type == "CNAME":
-            value = 0b00001001
-        elif type == "MX":
-            value = 0b00001010
-        elif type == "PTR":
-            value = 0b00001011
-        if value == -1:
-            return None
-        return value.to_bytes(1, 'big', signed=False)
-
 
     def encode(self) -> bytes | None:
         id_encode = self.id.to_bytes(2, 'big', signed=False)
@@ -108,30 +50,31 @@ class DNSMessage:
         response_flags = response_flags.to_bytes(1, 'big', signed=False)
         query_name_length = len(self.query_info[0]).to_bytes(1, 'big', signed=False)
         query_name_encode = self.query_info[0].encode('ascii')
-        query_type_encode = self.__encode_type_query_info__(self.query_info[1])
+        query_type_encode = encode_type_query_info(self.query_info[1])
 
         if query_type_encode is None:
             return None
+        query_type_encode = query_type_encode.to_bytes(1, 'big', signed=False)
 
         values = bytes()
         for value in self.response_values:
-            value_encode = self.__encode_value__(value)
+            value_encode = encode_value(value)
             if value_encode is None:
                 return None
             values += value_encode
         for value in self.auth_values:
-            value_encode = self.__encode_value__(value)
+            value_encode = encode_value(value)
             if value_encode is None:
                 return None
             values += value_encode
         for value in self.extra_values:
-            value_encode = self.__encode_value__(value)
+            value_encode = encode_value(value)
             if value_encode is None:
                 return None
             values += value_encode
             
 
-        return id_encode + response_flags + number_values_bytes + number_authorities_values_bytes + number_extra_values_bytes + query_name_length + query_name_encode + query_type_encode + values
+        return id_encode + response_flags + number_values_bytes + number_authorities_values_bytes + number_extra_values_bytes + query_name_length + query_name_encode + query_type_encode + len(values).to_bytes(1, 'big', signed=False) + values
 
     def get_query_info(self) -> tuple[str, str]:
         return self.query_info
@@ -251,7 +194,6 @@ def from_message_str(message: str) -> DNSMessage:
     return message_object
 
 def decode_type_query_info(byte: int) -> str | None:
-    print(byte)
     if byte == 0b00000000:
         return "DEFAULT"
     elif byte == 0b00000001:
@@ -289,6 +231,11 @@ def get_str_from_flags(flags: list[int]) -> str:
         camps.append('A')
     return '+'.join(camps)
 
+def decode_string(string: bytes, start: int, end: int) -> str:
+    res = ""
+    for index in range(start, end):
+        res += chr(string[index])
+    return res
 
 def decode_message_dns(message: bytes) -> DNSMessage | None:
     message_id = message[0] + message[1]
@@ -300,14 +247,117 @@ def decode_message_dns(message: bytes) -> DNSMessage | None:
         # return id_encode + response_flags + number_values_bytes + number_authorities_values_bytes + number_extra_values_bytes + query_name_length + query_name_encode + query_type_encode + values
     response_code = response_flags & 0b00000011
     number_values = message[3]
+    print("number_values =", number_values)
     number_auth_values = message[4]
+    print("number_auth_values =", number_auth_values)
     number_extra_values = message[5]
+    print("number_extra_values =", number_extra_values)
     query_name_length = message[6]
-    query_name = ""
-    for index in range(6 + 1, 6 + 1 + query_name_length):
-        query_name += chr(message[index])
+    query_name = decode_string(message, 6 + 1, 6 + 1 + query_name_length)
     type = message[6 + 1 + query_name_length]
     type = decode_type_query_info(type)
     if type is None:
         return None
+
+    values = []
+    len_values = message[8 + query_name_length] + message[9 + query_name_length] + message[10 + query_name_length] + message[11 + query_name_length]
+    index = 12 + query_name_length
+    value_index = 1
+    while index < 12 + query_name_length + len_values:
+        dom_length = message[index]
+        print("dom_length=", dom_length)
+        index += 1
+        dom = decode_string(message, index, index + dom_length)
+        print("dom=", dom)
+        index += dom_length
+        type_value = message[index]
+        print("type_value=", type_value)
+        index += 1
+        param_length = message[index]
+        print("param_legnth=", param_length)
+        index += 1
+        param = decode_string(message, index, index + param_length)
+        print("param=", param)
+        index += param_length
+        res = dom
+        has_ttl = False
+        has_priority = False
+        if type_value & 0b00010000 != 0:
+            has_ttl = True
+            type_value &= 0b11101111
+        if type_value & 0b00100000 != 0:
+            has_priority = True
+            type_value &= 0b11011111
+        print(type_value, "value=", value_index)
+        type_decode = decode_type_query_info(type_value)
+        if type_decode is None:
+            print("deu erro qui")
+            return None
+        res += type_decode + param
+        if has_ttl:
+            res += str(message[index] + message[index + 1] + message[index + 2] + message[index + 3])
+            index += 4
+        if has_priority:
+            res += str(message[index])
+            index += 1 
+            
+        value_index += 1
+        values.append(res)
+
     return DNSMessage(id=message_id, response_code=response_code, flags=(get_str_from_flags(flags)), number_values=number_values, number_authorities=number_auth_values, number_extra_values=number_extra_values, query_info=(query_name, type))
+
+def encode_type_query_info(type: str) -> int | None:
+    value = -1
+    if type == "DEFAULT":
+        value = 0b00000000
+    elif type == "SOASP":
+        value = 0b00000001
+    elif type == "SOAADMIN":
+        value = 0b00000010
+    elif type == "SOASERIAL":
+        value = 0b00000011
+    elif type == "SOAREFRESH":
+        value = 0b00000100
+    elif type == "SOARETRY":
+        value = 0b00000101
+    elif type == "SOAEXPIRE":
+        value = 0b00000110
+    elif type == "NS":
+        value = 0b00000111
+    elif type == "A":
+        value = 0b00001000
+    elif type == "CNAME":
+        value = 0b00001001
+    elif type == "MX":
+        value = 0b00001010
+    elif type == "PTR":
+        value = 0b00001011
+    if value == -1:
+        return None
+    return value
+
+def encode_value(value: str) -> bytes | None:
+    camps = value.split(' ') 
+    parameter = camps[0]
+    type = camps[1]
+    value_camp = camps[2]
+    ttl = "" if len(camps) <= 3 else camps[3]
+    priority = "" if len(camps) <= 4 else camps[4]
+    parameter_length = len(parameter).to_bytes(1, 'big', signed=False)
+    parameter = parameter.encode('ascii')
+    type = encode_type_query_info(type)
+    if type is None:
+        return None
+    value_length = len(value_camp).to_bytes(1, 'big', signed=False)
+    value_camp = value_camp.encode('ascii')
+    if ttl != "":
+        type |= 0b00010000
+    if priority != "":
+        type |= 0b00100000
+    res = parameter_length + parameter + type.to_bytes(1, 'big', signed=False) + value_length + value_camp 
+    if ttl != "":
+        res += int(ttl).to_bytes(4, 'big', signed=False)
+    if priority != "":
+        res += int(priority).to_bytes(1, 'big', signed=False)
+    return res
+
