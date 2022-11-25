@@ -11,3 +11,5 @@ caso queira que o servidor corra em modo debug no campo Debug(Opcional) basta co
 
 Para colocar o cliente a executar deverá ser executado o seguinte comando
   sudo python clientmain.py [ip servidor:[porta de atendimento(5353 por default)]] [query_info(ex. "example.com.")] [tipo dos dados da query(ex. "MX")]
+
+Lemmbrando que os ficheiros de configuracao dos varios servidores encontram-se em Core/serverconfigs e os ficheiros das bases de dados encontram-se nos Core/DBFiles
