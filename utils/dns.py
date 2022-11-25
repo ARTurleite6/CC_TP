@@ -31,26 +31,107 @@ class DNSMessage:
     def get_id(self) -> int:
         return self.id
             
-    def __get__str__from__flags(self):
-        camps = []
+    def __encode_value__(self, value: str) -> bytes | None:
+        camps = value.split(' ') 
+        parameter = camps[0]
+        type = camps[1]
+        value_camp = camps[2]
+        ttl = "" if len(camps) > 3 else camps[3]
+        priority = "" if len(camps) > 4 else camps[4]
+
+        parameter_length = len(parameter).to_bytes(1, 'big', signed=False)
+        parameter = parameter.encode('ascii')
+        type = self.__encode_type_query_info__(type)
+        if type is None:
+            return None
+        value_length = len(value_camp).to_bytes(1, 'big', signed=False)
+        value_camp = value_camp.encode('ascii')
+        ttl_existence = (1 if ttl != "" else 0).to_bytes(1, 'big', signed=False)
+        priority_existence = (1 if priority != "" else 0).to_bytes(1, 'big', signed=False)
+
+        res = parameter_length + parameter + type + value_length + value_camp + ttl_existence
+        if ttl != "":
+            res += int(ttl).to_bytes(4, 'big', signed=False)
+        res += priority_existence
+        if priority != "":
+            res += int(priority).to_bytes(1, 'big', signed=False)
+        return res
+            
+
+
+    def __encode_type_query_info__(self, type: str) -> bytes | None:
+        value = -1
+        if type == "DEFAULT":
+            value = 0b00000000
+        elif type == "SOASP":
+            value = 0b00000001
+        elif type == "SOAADMIN":
+            value = 0b00000010
+        elif type == "SOASERIAL":
+            value = 0b00000011
+        elif type == "SOAREFRESH":
+            value = 0b00000100
+        elif type == "SOARETRY":
+            value = 0b00000101
+        elif type == "SOAEXPIRE":
+            value = 0b00000110
+        elif type == "NS":
+            value = 0b00000111
+        elif type == "A":
+            value = 0b00001000
+        elif type == "CNAME":
+            value = 0b00001001
+        elif type == "MX":
+            value = 0b00001010
+        elif type == "PTR":
+            value = 0b00001011
+        if value == -1:
+            return None
+        return value.to_bytes(1, 'big', signed=False)
+
+
+    def encode(self) -> bytes | None:
+        id_encode = self.id.to_bytes(2, 'big', signed=False)
+        number_values_bytes = self.number_values.to_bytes(1, 'big', signed=False)
+        number_authorities_values_bytes = self.number_authorities.to_bytes(1, 'big', signed=False)
+        number_extra_values_bytes = self.number_extra_values.to_bytes(1, 'big', signed=False)
+        response_flags = 0
+
         if self.flags[0] == 1:
-            camps.append('Q')
-
+            response_flags |= 0b00010000
         if self.flags[1] == 1:
-            camps.append('R')
-
+            response_flags |= 0b00001000
         if self.flags[2] == 1:
-            camps.append('A')
+            response_flags |= 0b00000100
 
-        return '+'.join(camps)
+        response_flags |= self.response_code
+        response_flags = response_flags.to_bytes(1, 'big', signed=False)
+        query_name_length = len(self.query_info[0]).to_bytes(1, 'big', signed=False)
+        query_name_encode = self.query_info[0].encode('ascii')
+        query_type_encode = self.__encode_type_query_info__(self.query_info[1])
 
-    def encode(self) -> bytes:
-        id_encode = self.id.to_bytes(2, 'little', signed=False)
-        number_values_bytes = self.number_values.to_bytes(1, 'little')
-        number_authorities_values_bytes = self.number_authorities.to_bytes(1, 'little')
-        number_extra_values_bytes = self.number_extra_values.to_bytes(1, 'little')
+        if query_type_encode is None:
+            return None
 
-        return id_encode
+        values = bytes()
+        for value in self.response_values:
+            value_encode = self.__encode_value__(value)
+            if value_encode is None:
+                return None
+            values += value_encode
+        for value in self.auth_values:
+            value_encode = self.__encode_value__(value)
+            if value_encode is None:
+                return None
+            values += value_encode
+        for value in self.extra_values:
+            value_encode = self.__encode_value__(value)
+            if value_encode is None:
+                return None
+            values += value_encode
+            
+
+        return id_encode + response_flags + number_values_bytes + number_authorities_values_bytes + number_extra_values_bytes + query_name_length + query_name_encode + query_type_encode + values
 
     def get_query_info(self) -> tuple[str, str]:
         return self.query_info
@@ -72,35 +153,36 @@ class DNSMessage:
             pre_extra_values = "EXTRA-VALUES = "
             if number_values == 0:
                 values += "RESPONSE-VALUES = (Null)"
-            if num_auth_values == 0:
-                values += "\nAUTHORITIES-VALUES = (Null)"
-            if num_extra_values == 0:
-                values += "\nEXTRA-VALUES = (Null)"
 
         for (i, value) in enumerate(self.response_values):
+            if not debug_mode:
+                values += '\n'
             values += f"{pre_res_values}{value}" 
             if i == number_values - 1:
                 values += ";"
             else:
                 values += ","
+
+        if num_auth_values == 0:
+            values += "\nAUTHORITIES-VALUES = (Null)"
+        for (i, value) in enumerate(self.auth_values):
             if not debug_mode:
                 values += '\n'
-        for (i, value) in enumerate(self.auth_values):
             values += f"{pre_auth_values}{value}"
             if i == num_auth_values - 1:
                 values += ";"
             else:
                 values += ","
+        if num_extra_values == 0:
+            values += "\nEXTRA-VALUES = (Null)"
+        for (i, value) in enumerate(self.extra_values):
             if not debug_mode:
                 values += '\n'
-        for (i, value) in enumerate(self.extra_values):
             values += f"{pre_extra_values}{value}"
             if i == num_extra_values - 1:
                 values += ";"
             else:
                 values += ","
-            if not debug_mode:
-                values += '\n'
         return values
             
  
@@ -108,14 +190,14 @@ class DNSMessage:
 
         if not debug_mode:
             return f"""# Header
-MESSAGE-ID = {self.id}, FLAGS = {self.__get__str__from__flags()}, RESPONSE-CODE = {self.response_code},
+MESSAGE-ID = {self.id}, FLAGS = {get_str_from_flags(self.flags)}, RESPONSE-CODE = {self.response_code},
 N-VALUES = {self.number_values}, N-AUTHORITIES = {self.number_authorities}, N-EXTRA-VALUES = {self.number_extra_values},;
 # Data: Query Info
 QUERY-INFO.NAME = {self.query_info[0]}, QUERY-INFO.TYPE = {self.query_info[1]},;
 # Data: List of Response, Authorities and Extra Values
 {self.__get_values_str__()}"""
         else:
-            return f"""{self.id},{self.__get__str__from__flags()},{self.response_code},{self.number_values},{self.number_authorities},{self.number_extra_values};{self.query_info[0]},{self.query_info[1]};{self.__get_values_str__(debug_mode)}"""
+            return f"""{self.id},{get_str_from_flags(self.flags)},{self.response_code},{self.number_values},{self.number_authorities},{self.number_extra_values};{self.query_info[0]},{self.query_info[1]};{self.__get_values_str__(debug_mode)}"""
 
 def flags_from_str(flags: str) -> list[int]:
     flags_list = [0, 0, 0]
@@ -168,7 +250,64 @@ def from_message_str(message: str) -> DNSMessage:
 
     return message_object
 
+def decode_type_query_info(byte: int) -> str | None:
+    print(byte)
+    if byte == 0b00000000:
+        return "DEFAULT"
+    elif byte == 0b00000001:
+        return "SOASP"
+    elif byte == 0b00000010:
+        return "SOAADMIN"
+    elif byte == 0b00000011:
+        return "SOASERIAL"
+    elif byte == 0b00000100:
+        return "SOAREFRESH"
+    elif byte == 0b00000101:
+        return "SOARETRY"
+    elif byte == 0b00000110:
+        return "SOAEXPIRE"
+    elif byte == 0b00000111:
+        return "NS"
+    elif byte == 0b00001000:
+        return "A"
+    elif byte == 0b00001001:
+        return "CNAME"
+    elif byte == 0b00001010:
+        return "MX"
+    elif byte == 0b00001011:
+        return "PTR"
+    else:
+        return None
+
+def get_str_from_flags(flags: list[int]) -> str:
+    camps = []
+    if flags[0] == 1:
+        camps.append('Q')
+    if flags[1] == 1:
+        camps.append('R')
+    if flags[2] == 1:
+        camps.append('A')
+    return '+'.join(camps)
 
 
-def decode_message_dns(message: bytes) -> DNSMessage:
-    pass
+def decode_message_dns(message: bytes) -> DNSMessage | None:
+    message_id = message[0] + message[1]
+    response_flags = message[2]
+    flags = []
+    flags.append(1 if 0b00010000 & response_flags != 0 else 0)
+    flags.append(1 if 0b00001000 & response_flags != 0 else 0)
+    flags.append(1 if 0b00000100 & response_flags != 0 else 0)
+        # return id_encode + response_flags + number_values_bytes + number_authorities_values_bytes + number_extra_values_bytes + query_name_length + query_name_encode + query_type_encode + values
+    response_code = response_flags & 0b00000011
+    number_values = message[3]
+    number_auth_values = message[4]
+    number_extra_values = message[5]
+    query_name_length = message[6]
+    query_name = ""
+    for index in range(6 + 1, 6 + 1 + query_name_length):
+        query_name += chr(message[index])
+    type = message[6 + 1 + query_name_length]
+    type = decode_type_query_info(type)
+    if type is None:
+        return None
+    return DNSMessage(id=message_id, response_code=response_code, flags=(get_str_from_flags(flags)), number_values=number_values, number_authorities=number_auth_values, number_extra_values=number_extra_values, query_info=(query_name, type))

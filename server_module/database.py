@@ -106,7 +106,7 @@ class CacheConfig:
             for entry in self.infos:
                 if (entry.parametro == query_value and entry.tipo == query_type and not entry.is_free()):
                     res.append(entry)
-                elif query_value == entry.parametro and entry.tipo == "NS" and not entry.is_free():
+                if query_value == entry.parametro and entry.tipo == "NS" and not entry.is_free():
                     auths.append(entry)
 
             for value in res:

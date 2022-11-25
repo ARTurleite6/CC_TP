@@ -18,8 +18,8 @@ def main():
     if len(camps) == 2:
         server_port = int(camps[1])
     query_value = argv[2]
-    if query_value[-1] != '.':
-        query_value += '.'
+    # if query_value[-1] != '.':
+    #     query_value += '.'
 
     query_type = argv[3]
     recursive_mode = False
