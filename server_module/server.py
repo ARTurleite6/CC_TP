@@ -24,7 +24,7 @@ class Server:
 
         sps = self.server_config.get_sp_servers()
         threads: list[Thread] = []
-        for (domain, server) in sps:
+        for (domain, server) in sps.items():
             camps = server.split(':')
             server_ip = camps[0]
             port = 5353 
@@ -37,11 +37,9 @@ class Server:
 
         for thread in threads:
             thread.join()
-            
         UDPClientListener(self.port, self.server_config, self.timeout).start()
 
-        for (domain, server) in sps:
-            domain += "."
+        for (domain, server) in sps.items():
             UDPSSTransferSender(domain=domain, server=server, server_config=self.server_config, ttl=self.timeout).start()
 
     def shutdown(self, _signal_number_, _frame):
