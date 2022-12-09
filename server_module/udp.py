@@ -107,10 +107,21 @@ class UDPQueryAnswer(Thread):
         if self.server_config.can_answer_domain(query_info[0]):
             answer = self.server_config.get_database_values(query_value=query_info[0], query_type=query_info[1])
 
-            flags = "R+A"
+            if len(answer[0]) == 0:
+                #TODO perguntar ao stor se o modo iterativo é so implementado no servidor Resolver ou me todos eles
+                pass
+            else:
+                flags = "R+A"
 
-            message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags=flags, values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
-                self.server_config.log_info(query_info[0], f"{datetime.now()} RP {self.client_addr[0]} {message.to_message_str()}")
+                message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags=flags, values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                    s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
+                    self.server_config.log_info(query_info[0], f"{datetime.now()} RP {self.client_addr[0]} {message.to_message_str()}")
 
+def ip_from_str(string: str) -> tuple[str, int]:
+    camps = string.split(':')
+    port = 5353
+    if len(camps) == 2:
+        port = int(camps[1])
+
+    return camps[0], port

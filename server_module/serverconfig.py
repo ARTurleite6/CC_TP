@@ -36,6 +36,12 @@ class ServerConfig:
             self.log_info("all", f"{datetime.datetime.now()} SP 127.0.0.1 Error reading config file")
             sys.exit()
 
+    def am_i_sr(self) -> bool:
+        return len(self.sp_servers) == 0 and len(self.ss_servers) == 0 and len(self.databases_files) == 0
+
+    def get_root_servers(self) -> list[str]:
+        return list(self.root_servers)
+
     def can_answer_domain(self, domain: str) -> bool:
         if len(self.default_servers) == 0 or (len(self.sp_servers) == 0 and len(self.ss_servers) == 0 and len(self.databases_files) == 0):
             return True

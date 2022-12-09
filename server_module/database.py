@@ -158,6 +158,17 @@ class CacheConfig:
 
                 self.ss_domain_lines[domain].clear()
 
+    def get_closer_authorities(self, domain: str) -> tuple[list[str] | None, str]:
+        with self.lock:
+            while domain:
+                res = set(filter(lambda entry: entry.tipo == "NS" and entry.parametro == domain, self.infos))
+                if len(res) != 0:
+                    return list(map(lambda entry: entry.valor, filter(lambda entry: entry.tipo == "A" and entry.parametro in res, self.infos))), domain
+                domain = domain.split('.', maxsplit=1)[1]
+
+            return None, "."
+            
+
     def read_database_file(self, database_file: list[str], origin: Origin, domain: str):
         if origin == Origin.SP:
             self.__clean_domain_db__(domain)
