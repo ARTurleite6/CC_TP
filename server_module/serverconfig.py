@@ -37,7 +37,7 @@ class ServerConfig:
             sys.exit()
 
     def can_answer_domain(self, domain: str) -> bool:
-        if len(self.default_servers) == 0:
+        if len(self.default_servers) == 0 or (len(self.sp_servers) == 0 and len(self.ss_servers) == 0 and len(self.databases_files) == 0):
             return True
 
         return domain in self.default_servers
