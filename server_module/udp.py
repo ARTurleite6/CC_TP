@@ -108,15 +108,59 @@ class UDPQueryAnswer(Thread):
             answer = self.server_config.get_database_values(query_value=query_info[0], query_type=query_info[1])
 
             if len(answer[0]) == 0:
-                #TODO perguntar ao stor se o modo iterativo é so implementado no servidor Resolver ou me todos eles
-                pass
+                self.get_answer(query_info[0])
             else:
-                flags = "R+A"
+                message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="R+A", values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
+                self.send_answer(message)
+                # with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                #     s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
+                #     self.server_config.log_info(query_info[0], f"{datetime.now()} RP {self.client_addr[0]} {message.to_message_str()}")
 
-                message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags=flags, values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
-                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                    s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
-                    self.server_config.log_info(query_info[0], f"{datetime.now()} RP {self.client_addr[0]} {message.to_message_str()}")
+    def get_answer(self, domain: str) -> None:
+        if self.server_config.am_i_sr():
+            closer_domain = self.server_config.database_config.get_closer_domain_with_auth(domain)
+            authorities = []
+            if closer_domain is None:
+                authorities = self.server_config.get_root_servers()
+            else:
+                authorities = self.server_config.get_database_values(closer_domain, "NS")[2]
+                auth = 0
+                found = False
+                while not found and auth < len(authorities):
+                    pass
+                
+        else:
+            closer_domain = self.server_config.database_config.get_closer_domain_with_auth(domain)
+            if closer_domain is not None:
+                answer = self.server_config.get_database_values(closer_domain, "NS")
+                message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="R+A", values=answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=0, response_code=0)
+                self.send_answer(message)
+
+
+    def send_answer(self, message: DNSMessage):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
+            self.server_config.log_info(message.get_query_info()[0], f"{datetime.now()} RP {self.client_addr[0]} {message.to_message_str()}")
+
+
+
+def send_question(ttl: int, message: DNSMessage, ip: tuple[str, int], server_config: ServerConfig | None = None) -> DNSMessage | None:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        tries = 0
+        while tries < 3:
+            try:
+                s.settimeout(ttl)
+                s.sendto(message.to_message_str(debug_mode=False).encode('utf-8'), ip)
+                if server_config is not None:
+                    server_config.log_info(message.get_query_info()[0], f"{datetime.now()} QE {ip[0]} {message.to_message_str()}")
+
+                answer = s.recv(1024)
+                answer = answer.decode('utf-8')
+                return from_message_str(answer)
+            except TimeoutError:
+                print("Passou o timeout")
+                tries += 1
+        return None
 
 def ip_from_str(string: str) -> tuple[str, int]:
     camps = string.split(':')

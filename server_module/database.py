@@ -101,7 +101,7 @@ class CacheConfig:
         with self.lock:
             res: list[CacheEntry] = []
             auths: list[CacheEntry]= []
-            ips: list[CacheEntry] = []
+            ips: set[CacheEntry] = set()
 
             for entry in self.infos:
                 if (entry.parametro == query_value and entry.tipo == query_type and not entry.is_free()):
@@ -112,12 +112,12 @@ class CacheConfig:
             for value in res:
                 for entry in self.infos:
                     if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free():
-                        ips.append(entry)
+                        ips.add(entry)
 
             for value in auths:
                 for entry in self.infos:
-                    if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free():
-                        ips.append(entry)
+                    if value.valor == entry.parametro and entry.tipo == "A" and not entry.is_free() and entry not in ips:
+                        ips.add(entry)
 
             res_str = list(map(lambda entry: entry.get_entry_as_line(), res))
             auths_str = list(map(lambda entry: entry.get_entry_as_line(), auths))
@@ -158,15 +158,15 @@ class CacheConfig:
 
                 self.ss_domain_lines[domain].clear()
 
-    def get_closer_authorities(self, domain: str) -> tuple[list[str] | None, str]:
+    def get_closer_domain_with_auth(self, domain: str) -> str | None:
         with self.lock:
             while domain:
-                res = set(filter(lambda entry: entry.tipo == "NS" and entry.parametro == domain, self.infos))
+                res = set(filter(lambda entry: entry.tipo == "NS" and entry.parametro == domain and entry.status == Status.VALID, self.infos))
                 if len(res) != 0:
-                    return list(map(lambda entry: entry.valor, filter(lambda entry: entry.tipo == "A" and entry.parametro in res, self.infos))), domain
+                    return domain
                 domain = domain.split('.', maxsplit=1)[1]
 
-            return None, "."
+            return None
             
 
     def read_database_file(self, database_file: list[str], origin: Origin, domain: str):
