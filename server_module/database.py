@@ -132,8 +132,8 @@ class CacheConfig:
         if words[0][-1] != '.':
             words[0] += '.' + concat_value
 
-        if not words[2].isdigit() and not self.__is_an_ip__(words[2]) and words[2][-1] != '.':
-            words[2] += '.' + concat_value
+        # if not words[2].isdigit() and not self.__is_an_ip__(words[2]) and words[2][-1] != '.':
+        #     words[2] += '.' + concat_value
             
         return words
             
@@ -163,6 +163,7 @@ class CacheConfig:
             while domain:
                 res = set(filter(lambda entry: entry.tipo == "NS" and entry.parametro == domain and entry.status == Status.VALID, self.infos))
                 if len(res) != 0:
+                    print(domain)
                     return domain
                 domain = domain.split('.', maxsplit=1)[1]
 
@@ -176,7 +177,7 @@ class CacheConfig:
         default = {}
 
         concatable_value = ""
-        for line in filter(lambda x: x[0] != '#', database_file):
+        for line in filter(lambda x: x and x[0] != '#', database_file):
             for (variable, value) in default.items():
                 line = line.replace(variable, value)
 

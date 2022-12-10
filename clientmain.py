@@ -6,7 +6,7 @@ from server_module import udp
 
 from utils.dns import from_message_str
 
-TTL = 3
+TTL = 20
 
 def main():
     if(len(argv) < 4):

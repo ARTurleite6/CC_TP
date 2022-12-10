@@ -3,4 +3,4 @@ tiroliroliro SS 10.0.15.10
 tiroliroliro SS 10.0.16.10
 tiroliroliro LG /var/dns/tiroliroliro.log
 all LG /var/dns/all.log
-root ST /var/dns/rootservers.db
+root ST /var/dns/root-servers.db
