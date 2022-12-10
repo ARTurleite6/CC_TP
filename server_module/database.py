@@ -11,14 +11,13 @@ class Origin(Enum):
     OTHER = 2
 
 class CacheEntry:
-    def __init__(self, parametro: str = "", tipo: str = "", valor: str = "", ttl: str = "", prioridade: str = "", origem: Origin = Origin.OTHER, tempo_em_cache: int = 0, status: Status = Status.VALID):
+    def __init__(self, parametro: str = "", tipo: str = "", valor: str = "", ttl: str = "", prioridade: str = "", origem: Origin = Origin.OTHER, status: Status = Status.VALID):
         self.parametro = parametro
         self.tipo = tipo
         self.valor = valor
         self.ttl = ttl
         self.prioridade = prioridade
         self.origem = origem
-        self.tempo_em_cache = tempo_em_cache
         self.status = status
 
     def get_entry_as_line(self):
@@ -32,7 +31,7 @@ class CacheEntry:
         return value
 
     def __str__(self):
-        return f"CacheEntry(parametro={self.parametro}, tipo={self.tipo}, valor={self.valor}, ttl={self.ttl}, prioridade={self.prioridade}, origem={self.origem}, tempo_em_cache={self.tempo_em_cache}, status={self.status})"
+        return f"CacheEntry(parametro={self.parametro}, tipo={self.tipo}, valor={self.valor}, ttl={self.ttl}, prioridade={self.prioridade}, origem={self.origem}, status={self.status})"
 
     def is_free(self) -> bool:
         return self.status == Status.FREE
@@ -40,6 +39,16 @@ class CacheEntry:
     def set_free(self) -> None:
         self.status = Status.FREE
 
+
+def cache_entry_from_str(message: str, origem: Origin) -> CacheEntry:
+    camps = message.split(' ')
+    parametro = camps[0]
+    tipo = camps[1]
+    valor = camps[2]
+    ttl = "" if len(camps) < 4 else camps[3]
+    prioridade = "" if len(camps) < 5 else camps[4]
+    return CacheEntry(parametro=parametro, tipo=tipo, valor=valor, ttl=ttl, prioridade=prioridade, origem=origem)
+        
 
 class CacheConfig:
     def __init__(self, infos: list[CacheEntry] = []):
@@ -79,6 +88,7 @@ class CacheConfig:
                 self.ss_domain_lines[domain] = set()
 
             if free_cell == -1:
+                free_cell = len(self.infos)
                 self.infos.append(entry)
                 if domain != "":
                     self.ss_domain_lines[domain].add(len(self.infos) - 1)
@@ -86,6 +96,15 @@ class CacheConfig:
                 self.infos[free_cell] = entry 
                 if domain != "":
                     self.ss_domain_lines[domain].add(free_cell)
+
+            if entry.origem == Origin.OTHER:
+                Timer(0 if entry.ttl == "" else int(entry.ttl), self.clean_entry, [free_cell]).start()
+
+    def clean_entry(self, index: int):
+        with self.lock:
+            if index < len(self.infos):
+                print(self.infos[index])
+                self.infos[index].set_free()
 
     def __str__(self):
         with self.lock:
@@ -204,7 +223,7 @@ class CacheConfig:
                     default[param] = value
                     if param == "@":
                         concatable_value = value
-            self.add_entry(CacheEntry(parametro=param, tipo=type, valor=value, ttl=ttl, prioridade=priority, origem=origin, tempo_em_cache=0, status=Status.VALID), domain)
+            self.add_entry(CacheEntry(parametro=param, tipo=type, valor=value, ttl=ttl, prioridade=priority, origem=origin, status=Status.VALID), domain)
 
 
         

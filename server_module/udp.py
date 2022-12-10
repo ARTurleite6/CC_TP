@@ -1,6 +1,7 @@
 import socket
 from time import sleep
 from datetime import datetime
+from server_module.database import cache_entry_from_str, Origin
 from server_module.tcp import transfer_zone_receive
 
 from server_module.serverconfig import ServerConfig
@@ -120,13 +121,12 @@ class UDPQueryAnswer(Thread):
 
     def get_answer(self, domain: str) -> DNSMessage | None:
         if self.server_config.am_i_sr():
-            print("ola")
             closer_domain = self.server_config.database_config.get_closer_domain_with_auth(domain)
             authorities = []
             if closer_domain is None:
                 authorities = self.server_config.get_root_servers()
             else:
-                authorities = self.server_config.get_database_values(closer_domain, "NS")[2]
+                authorities = list(map(lambda entry: entry.split(' ')[2], self.server_config.get_database_values(closer_domain, "NS")[2]))
             auth = 0
                 # found = False
             while auth < len(authorities):
@@ -136,11 +136,13 @@ class UDPQueryAnswer(Thread):
                     auth += 1
                 else:
                     print(message)
+
+                    for res in message.response_values + message.auth_values + message.extra_values:
+                        self.server_config.database_config.add_entry(cache_entry_from_str(res, origem=Origin.OTHER))
+                    print(self.server_config.database_config)
                     if message.number_values != 0:
-                        print("é igual a 0")
                         return message
                     else:
-                        print("tenho uma resposta")
                         authorities = list(map(lambda value: value.split(' ')[2], message.extra_values))
                         print(authorities)
 
@@ -172,7 +174,10 @@ def send_question(ttl: int, message: DNSMessage, ip: tuple[str, int], server_con
 
                 answer = s.recv(1024)
                 answer = answer.decode('utf-8')
-                return from_message_str(answer)
+                answer = from_message_str(answer)
+                if server_config is not None:
+                    server_config.log_info(message.get_query_info()[0], f"{datetime.now()} RR {ip[0]} {answer.to_message_str()}")
+                return answer
             except TimeoutError:
                 print("Passou o timeout")
                 tries += 1
