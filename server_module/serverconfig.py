@@ -52,7 +52,7 @@ class ServerConfig:
         self.database_config.add_expire_ss_timer(domain, expire_time)
 
     def has_authority(self, domain: str) -> bool:
-        return domain in self.sp_servers or domain in self.ss_servers
+        return domain in self.databases_files or domain in self.sp_servers or domain in self.ss_servers
 
     def has_type_for_domain(self, domain: str, type: str) -> bool:
         return self.database_config.has_type_for_domain(domain, type)
@@ -116,7 +116,7 @@ class ServerConfig:
             for line in filter(lambda line: line[0] != '#', file_content.splitlines()):
                 camps = line.split(" ")
                 dom: str = camps[0]
-                if dom != 'all':
+                if dom != 'all' and dom != ".":
                     dom += "."
                 type: str = camps[1]
                 value: str = camps[2]

@@ -113,7 +113,10 @@ class UDPQueryAnswer(Thread):
                 if answer is not None:
                     self.send_answer(answer)
             else:
-                message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="R+A", values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
+                flags = ""
+                if(self.server_config.has_authority(query_info[0])):
+                    flags = "A"
+                message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags=flags, values=answer[0] + answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=len(answer[0]), response_code=0)
                 self.send_answer(message)
                 # with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
                 #     s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), self.client_addr)
@@ -130,7 +133,7 @@ class UDPQueryAnswer(Thread):
             auth = 0
                 # found = False
             while auth < len(authorities):
-                print(authorities[auth])
+                print("authorities to call =", authorities[auth])
                 message = send_question(self.ttl, self.message, ip_from_str(authorities[auth]), self.server_config)
                 if message is None:
                     auth += 1
@@ -140,7 +143,8 @@ class UDPQueryAnswer(Thread):
                     for res in message.response_values + message.auth_values + message.extra_values:
                         self.server_config.database_config.add_entry(cache_entry_from_str(res, origem=Origin.OTHER))
                     print(self.server_config.database_config)
-                    if message.number_values != 0:
+                    if message.response_code == 0 or message.response_code == 2:
+                        message.flags = [0, 0, 0]
                         return message
                     else:
                         authorities = list(map(lambda value: value.split(' ')[2], message.extra_values))
@@ -150,10 +154,15 @@ class UDPQueryAnswer(Thread):
                 
         else:
             closer_domain = self.server_config.database_config.get_closer_domain_with_auth(domain)
-            if closer_domain is not None:
-                answer = self.server_config.get_database_values(closer_domain, "NS")
-                message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="R+A", values=answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=0, response_code=0)
-                self.send_answer(message)
+            if closer_domain is None:
+                print("deu none")
+                closer_domain = "."
+            response_code = 1
+            if self.server_config.has_authority(closer_domain):
+                response_code = 2
+            answer = self.server_config.get_database_values(closer_domain, "NS")
+            message = DNSMessage(id=self.message.get_id(), query_info=self.message.get_query_info(), flags="A", values=answer[1] + answer[2], number_extra_values=len(answer[2]), number_authorities=len(answer[1]), number_values=0, response_code=response_code)
+            self.send_answer(message)
 
 
     def send_answer(self, message: DNSMessage):
