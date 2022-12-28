@@ -126,10 +126,16 @@ class UDPQueryAnswer(Thread):
         if self.server_config.am_i_sr():
             closer_domain = self.server_config.database_config.get_closer_domain_with_auth(domain)
             authorities = []
+            reverse = None
             if closer_domain is None:
                 authorities = self.server_config.get_root_servers()
             else:
-                authorities = list(map(lambda entry: entry.split(' ')[2], self.server_config.get_database_values(closer_domain, "NS")[2]))
+                if self.message.get_query_info()[1] == "PTR":
+                    reverse_domain = self.server_config.database_config.get_closer_domain_with_auth("addr.reverse.")
+                    if reverse_domain is not None:
+                        reverse = list(map(lambda entry: entry.split(' ')[2], self.server_config.get_database_values(reverse_domain, "NS")[2]))
+                if reverse is None:
+                    authorities = list(map(lambda entry: entry.split(' ')[2], self.server_config.get_database_values(closer_domain, "NS")[2]))
             auth = 0
                 # found = False
             while auth < len(authorities):
@@ -154,6 +160,9 @@ class UDPQueryAnswer(Thread):
             return None
                 
         else:
+            if self.message.get_query_info()[1] == "PTR":
+                reverse_domain = "addr.reverse."
+                domain = reverse_domain
             closer_domain = self.server_config.database_config.get_closer_domain_with_auth(domain)
             if closer_domain is None:
                 print("deu none")

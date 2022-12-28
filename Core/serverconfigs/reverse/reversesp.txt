@@ -1,5 +1,6 @@
 reverse DB /var/dns/reverse.db
+addr.reverse DB /var/dns/reverse-addr.db
+10.addr.reverse DB /var/dns/10.addr.reverse.db
 reverse LG /var/dns/reverse.log
 all LG /var/dns/reverse.log
 root ST /var/dns/root-servers.db
-

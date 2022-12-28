@@ -8,21 +8,25 @@ TTL DEFAULT 86400
 @ SOAEXPIRE 604800 TTL
 
 @ NS ns1.10.addr.reverse. TTL
+ns1.10.addr.reverse A 10.0.14.12 TTL
 
-ns1.@ A 127.0.0.1:86 TTL
+10.0.16.200. PTR mx1.esquina.tiroliroliro. TTL
 
-10.0.15.10 PTR ns2.tiroliroliro.
-10.0.14.10 PTR ns1.tiroliroliro.
-10.0.16.10 PTR ns3.tiroliroliro.
+10.0.15.10. PTR ns2.tiroliroliro. TTL
+10.0.14.10. PTR ns1.tiroliroliro. TTL
+10.0.16.10. PTR ns3.tiroliroliro. TTL
 
-10.0.14.11 PTR ns1.tirolirolo.
-10.0.15.11 PTR ns2.tirolirolo.
-10.0.16.11 PTR ns3.tirolirolo.
+10.0.12.200. PTR mx1.concertina.tirolirolo TTL
+10.0.12.250. PTR mx2.concertina.tirolirolo TTL
 
-10.0.12.11 PTR ns1.concertina.tirolirolo.
-10.0.17.11 PTR ns2.concertina.tirolirolo.
-10.0.13.10 PTR ns3.concertina.tirolirolo.
+10.0.14.11. PTR ns1.tirolirolo. TTL
+10.0.15.11. PTR ns2.tirolirolo. TTL
+10.0.16.11. PTR ns3.tirolirolo. TTL
 
-10.0.16.12 PTR ns1.esquina.tiroliroliro.
-10.0.17.12 PTR ns2.esquina.tiroliroliro.
-10.0.12.10 PTR ns3.esquina.tiroliroliro.
+10.0.12.11. PTR ns1.concertina.tirolirolo. TTL
+10.0.17.11. PTR ns2.concertina.tirolirolo. TTL
+10.0.13.10. PTR ns3.concertina.tirolirolo. TTL
+
+10.0.16.12. PTR ns1.esquina.tiroliroliro. TTL
+10.0.17.12. PTR ns2.esquina.tiroliroliro. TTL
+10.0.12.10. PTR ns3.esquina.tiroliroliro. TTL
