@@ -136,6 +136,7 @@ class UDPQueryAnswer(Thread):
                 print("authorities to call =", authorities[auth])
                 message = send_question(self.ttl, self.message, ip_from_str(authorities[auth]), self.server_config)
                 if message is None:
+                    print("Nao tive resposta")
                     auth += 1
                 else:
                     print(message)
@@ -174,9 +175,9 @@ class UDPQueryAnswer(Thread):
 def send_question(ttl: int, message: DNSMessage, ip: tuple[str, int], server_config: ServerConfig | None = None) -> DNSMessage | None:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         tries = 0
+        s.settimeout(ttl)
         while tries < 3:
             try:
-                s.settimeout(ttl)
                 s.sendto(message.to_message_str(debug_mode=True).encode('utf-8'), ip)
                 if server_config is not None:
                     server_config.log_info(message.get_query_info()[0], f"{datetime.now()} QE {ip[0]} {message.to_message_str()}")
@@ -190,7 +191,7 @@ def send_question(ttl: int, message: DNSMessage, ip: tuple[str, int], server_con
             except TimeoutError:
                 print("Passou o timeout")
                 tries += 1
-        return None
+    return None
 
 def ip_from_str(string: str) -> tuple[str, int]:
     camps = string.split(':')

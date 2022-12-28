@@ -32,7 +32,8 @@ sp.tirolirolo. A 10.0.14.11 TTL
 ss1.tirolirolo. A 10.0.15.11 TTL
 ss2.tirolirolo. A 10.0.16.11 TTL
 
-reverse A 10.0.14.12 TTL
+reverse A 127.0.0.1:88 TTL
+#reverse A 10.0.14.12 TTL
 
 sp CNAME st1 TTL
 ss CNAME st2 TTL

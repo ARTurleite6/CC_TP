@@ -1,6 +1,5 @@
 @ DEFAULT reverse. 
 TTL DEFAULT 86400
-
 @ SOASP ns1.reverse. TTL 
 @ SOAADMIN dns\.admin.reverse. TTL 
 @ SOASERIAL 0000000000 TTL
@@ -8,8 +7,9 @@ TTL DEFAULT 86400
 @ SOARETRY 3600 TTL
 @ SOAEXPIRE 604800 TTL
 @ NS ns1.reverse. TTL
-
 addr.reverse. NS sp.addr.reverse. TTL
-ns1 A 10.0.14.12 TTL
-sp.addr.reverse. A 10.0.15.12 TTL
+ns1 A 127.0.0.1:88 TTL
+# ns1 A 10.0.14.12 TTL
+sp.addr.reverse. A 127.0.0.1:87 TTL
+# sp.addr.reverse. A 10.0.15.12 TTL
 sp CNAME ns1 TTL

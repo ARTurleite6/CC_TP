@@ -105,6 +105,7 @@ class CacheConfig:
             if index < len(self.infos):
                 print(self.infos[index])
                 self.infos[index].set_free()
+                print(self.infos[index])
 
     def __str__(self):
         with self.lock:
