@@ -39,6 +39,12 @@ class ServerConfig:
     def am_i_sr(self) -> bool:
         return len(self.sp_servers) == 0 and len(self.ss_servers) == 0 and len(self.databases_files) == 0
 
+    def get_default_servers(self, domain: str) -> list[str] | None:
+        if domain not in self.default_servers:
+            return None
+
+        return self.default_servers[domain]
+
     def get_root_servers(self) -> list[str]:
         return list(self.root_servers)
 

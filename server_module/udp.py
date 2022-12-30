@@ -136,6 +136,11 @@ class UDPQueryAnswer(Thread):
                         reverse = list(map(lambda entry: entry.split(' ')[2], self.server_config.get_database_values(reverse_domain, "NS")[2]))
                 if reverse is None:
                     authorities = list(map(lambda entry: entry.split(' ')[2], self.server_config.get_database_values(closer_domain, "NS")[2]))
+
+            default_servers = self.server_config.get_default_servers(domain)
+            if default_servers is not None:
+                for server in default_servers:
+                    authorities.insert(0, server)
             auth = 0
                 # found = False
             while auth < len(authorities):
